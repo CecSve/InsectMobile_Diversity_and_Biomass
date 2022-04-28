@@ -12,9 +12,9 @@ library(lubridate)
 
 ### fwh primer ##########################
 
-# NB!!! we still need to make sure that all libraries are included - library 44 fails no matter how the analysis is carried out, but we should be able to get data from 40, 42 and 46(?) is we combine the different DADA2 runs. Also be aware that the data is from Novaseq6000 and HiSeq4000(?), and quality thresholds are much fewer for Novaseq data (4 instead of 20+) which is not handled well by the default parametres in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that one fails to detect the rare sequences/taxa. 
+# NB!!! we still need to make sure that all libraries are included - library 44 fails no matter how the analysis is carried out, but we should be able to get data from 40, 42 and 46(?) is we combine the different DADA2 runs. Also be aware that the data is from Novaseq6000 and HiSeq4000, and quality thresholds are much fewer for Novaseq data (4 instead of 20+) which is not handled well by the default parameters in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that one fails to detect the rare sequences/taxa. 
 
-#sequence data for the first sequenced libraries 1-9 (which are fwh?), 10, 13, 16, 19, 22, 25, 28, 34, 36, 38, 40, 42, 44, 46 (library 4 not included, mostly 2018 samples) 
+#sequence data for the first sequenced libraries 1, 4, 10, 13, 16, 19, 22, 25, 28 (contains German samples), 31 (German samples - MISSING!), 34, 36, 38, 40, 42, (44 - fails in the DADA2 pipeline), 46  
 lulufied_1 <- readRDS("data/sequencing_data/firstrun/lulified_nochim_firstrun.RDS")
 otutable_1 <- lulufied_1[["curated_table"]] # extract the otutable
 names(otutable_1) # contains blanks, negatives, samples from 2018 and 2019 in Denmark, and samples from 2018 in Germany
@@ -22,7 +22,7 @@ names(otutable_1) # contains blanks, negatives, samples from 2018 and 2019 in De
 # the fasta file has been subset to only contain sequences with a length over 200 bp, so the asv table should only have asvs with the correct read length
 fastas_1 <- read.fasta("data/sequencing_data/firstrun/lulufied_otus_lengthcorrected_firstrun.fasta") # notice that there are fewer fastas than asvs - this is because we subset the fastas to be >200 bp (target length is 205 bp for the fwh primer) and the short sequences are discarded
 keep <- names(fastas_1)
-asvs_1 <- otutable_1[(rownames(otutable_1) %in% keep), ] # this removes 2632 asvs (not the correct length)
+asvs_1 <- otutable_1[(rownames(otutable_1) %in% keep), ] # this removes 2632 asvs (not the correct length - note to future self: could any of these be true Hymenoptera reads?)
 names(asvs_1)
 
 # rename the German sample names that were numbers and had an X added to the beginning. If we put 'S_' instead of X, then they will match the second sequencing run - and we will add the year of the sampling, since the numbering started over in 2019 so it would cause duplicate names.

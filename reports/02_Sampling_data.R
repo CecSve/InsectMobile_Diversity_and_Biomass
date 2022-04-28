@@ -2,14 +2,14 @@
 
 ### sampling data ####
 metadata_1 <- read.delim("data/sampling_data/SamplingEvent.txt")
-metadata_2 <- read.delim("data/sampling_data/SampleReg_20042020.txt")
+metadata_2 <- read.delim("data/sampling_data/SampleReg_20042020.txt") # update sheet with PilotNotes!
 
 # make sure the columns are identical between the two dataframes
 names(metadata_1) # remove exmpty and unneccesary columns
-metadata_1 <- metadata_1 %>% select(SampleID, PID, subLandUseType, Date, StartTime, EndTime, Wind, Temperature)
+metadata_1 <- metadata_1 %>% select(SampleID, PID, DOFAtlasQuadrantID, subLandUseType, Date, StartTime, EndTime, Wind, Temperature, Notes, PilotNotes) # we will not include google map links since route information will be added later from GIS
 
 names(metadata_2)
-metadata_2 <- metadata_2 %>% select(PilotTripID, PID, SubLandUseType, Date, StartTime, EndTime, Wind, Temperature)
+metadata_2 <- metadata_2 %>% select(PilotTripID, PID, DOFAtlasQuadrantID, SubLandUseType, Date, StartTime, EndTime, Wind, Temperature)
 metadata_2 <- metadata_2 %>% rename(SampleID = PilotTripID)
 metadata_2 <- metadata_2 %>% rename(subLandUseType = SubLandUseType)
 
@@ -67,7 +67,172 @@ labeldata$decimalLatitude <- coordinates(test2)[,2]
 unique(data$subLandUseType) # 89 unique
 
 test <- data %>%
-  mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng, mose, eng, sø", "marsh, bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="hede", "heath")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="mose, eng, sø", "bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, mose", "meadow, bog")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="hede, overdrev", "heath, pasture")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intensive, markblok", "intensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intensive, semi-intensive, markblok", "intensive, semi-intensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="overdrev", "pasture")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="mose, sø", "bog, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="overdrev, intensive, extensive", "pasture, intensive, extensive")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="tør, mark, våd", "dry, agriculture, wet")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="sø", "lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intesive, extensive, markblok", "intensive, extensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng, eng", "marsh, meadow")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, mose, sø", "bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng", "meadow")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="sø, mose, eng", "bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="sø, mose", "bog, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng, sø, mose", "marsh, lake, bog")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="mose, eng", "meadow, bog")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, mose, strandeng, sø", "marsh, bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="pasture, agricultureblock", "pasture, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intensive, markblock", "intensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng, sø", "marsh, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intensive, agricultureblock", "intensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intensive, extensive, agricultureblock", "intensive, extensive, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="agricultureblock, extensive, intensive, semi_intensive", "agricultural field, extensive, intensive, semi_intensive")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="0", "")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="hede/overdrev", "heath, pasture")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng, mose, sø", "marsh, bog, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="overdrev, strandeng, sø", "pasture, marsh, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="overdrev, markblok", "pasture, agricultural field")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, mose, sø, strandeng", "marsh, bog, meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="intesive", "intensive")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="sø, strandeng", "lake, marsh")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng", "marsh")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, sø", "meadow, lake")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="eng, overdrev", "meadow, pasutre")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="mose", "bog")) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="markblok, extensive, intensive, semi-intensive", "agricultural field, extensive, intensive, semi_intensive"))
+  mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "strandeng, mose, eng, sø",
+      "marsh, bog, meadow, lake"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "hede", "heath")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "mose, eng, sø",
+      "bog, meadow, lake"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "eng, mose", "meadow, bog")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "hede, overdrev",
+      "heath, pasture"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intensive, markblok",
+      "intensive, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intensive, semi-intensive, markblok",
+      "intensive, semi-intensive, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType, 
+      subLandUseType == "overdrev", "pasture"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "mose, sø", "bog, lake")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "overdrev, intensive, extensive",
+      "pasture, intensive, extensive"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "tør, mark, våd",
+      "dry, agriculture, wet"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "sø", "lake")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intesive, extensive, markblok",
+      "intensive, extensive, agricultural field"
+    )
+  ) %>% mutate(subLandUseType = replace(
+    subLandUseType,
+    subLandUseType == "strandeng, eng",
+    "marsh, meadow"
+  )) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "eng, mose, sø",
+      "bog, meadow, lake"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "eng", "meadow")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "sø, mose, eng",
+      "bog, meadow, lake"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "sø, mose", "bog, lake")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "strandeng, sø, mose",
+      "marsh, lake, bog"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "mose, eng", "meadow, bog")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "eng, mose, strandeng, sø",
+      "marsh, bog, meadow, lake"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "pasture, agricultureblock",
+      "pasture, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intensive, markblock",
+      "intensive, agricultural field"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "strandeng, sø", "marsh, lake")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intensive, agricultureblock",
+      "intensive, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "intensive, extensive, agricultureblock",
+      "intensive, extensive, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "agricultureblock, extensive, intensive, semi_intensive",
+      "agricultural field, extensive, intensive, semi_intensive"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "0", "")) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "hede/overdrev",
+      "heath, pasture"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "strandeng, mose, sø",
+      "marsh, bog, lake"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "overdrev, strandeng, sø",
+      "pasture, marsh, lake"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "overdrev, markblok",
+      "pasture, agricultural field"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "eng, mose, sø, strandeng",
+      "marsh, bog, meadow, lake"
+    )
+  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "intesive", "intensive")) %>% mutate(
+    subLandUseType=replace(
+      subLandUseType, 
+      subLandUseType=="sø, strandeng", "lake, marsh"
+    )
+  ) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng", "marsh")) %>% mutate(
+    subLandUseType=replace(
+      subLandUseType, subLandUseType=="eng, sø", "meadow, lake"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "eng, overdrev",
+      "meadow, pasutre"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(subLandUseType, subLandUseType == "mose", "bog"
+    )
+  ) %>% mutate(
+    subLandUseType = replace(
+      subLandUseType,
+      subLandUseType == "markblok, extensive, intensive, semi-intensive",
+      "agricultural field, extensive, intensive, semi_intensive"
+    )
+  )
 
 ### time & date formatting ##########################
 test <- data

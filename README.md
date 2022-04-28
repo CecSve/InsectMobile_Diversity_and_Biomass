@@ -1,6 +1,6 @@
 # InsectMobile: landscape-level drivers of flying insect diversity and biomass 
+WORK IN PROGRESS
 ## 
-
 This repository (R project) contains all scripts necessary to run the ecological/statistical analyses from the study "Landscape-level drivers of flying insect diversity and biomass" (Svenningsen et al. XXXX, DOI: [add link]).
 
 The data were collected in June 2018 and 2019 as part of the citizen science project InsectMobile ("Insektmobilen") at the Natural History Museum of Denmark and at iDiv in Germany during June-July 2018 and June 2019.

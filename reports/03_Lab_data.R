@@ -7,11 +7,13 @@ sampleid_size_pcrid_concentration <- read.delim("data/lab_data/sampleid_size_pcr
 imagerecognition <- read.delim("data/lab_data/imagerecognition.txt")
 
 # merge imagerecognition and sampleid_size_drymass
-test <- sampleid_size_drymass %>% filter(!DryMass_mg == 0)
-test2 <- imagerecognition %>% filter(!DryMass_mg == 0)
+labdata1 <- sampleid_size_drymass %>% filter(!DryMass_mg == 0)
+labdata2 <- imagerecognition %>% filter(!DryMass_mg == 0)
 
-mergedData <- rbind(test, test2)
-duplicated(mergedData$SampleID_size) 
+mergedData <- rbind(labdata1, labdata2)
+duplicated(mergedData$SampleID_size) # check for duplicates
+
+mergedData <- merge(mergedData, sampleid_size_pcrid_concentration, by = "SampleID_size", all = T) # add qubit measurement - NB concentration is DNA concentration of the purified DNA extract
 
 ### lab data from 2019 ####
 # for the biomass data, lab data was sorted by 1) size fractions, 2) whether biomass was measured, 3) if different weights or only ZM weights were used, then the data was flagged for potential erronous biomass estimates (biomassuncertainty = high)
@@ -22,16 +24,25 @@ pcrid_qubit_19 <- read.delim("data/lab_data/sampleid_size_pcrid_qubit_2019.txt")
 
 biomass19 <- rbind(sampleid_small_drymass, sampleid_large_drymass)
 biomass19 <- biomass19 %>% select(SampleID_size, SampleID, DryMass_mg, biomassUncertainty)
-test <- drop_na(biomass19)
+emptylines <- drop_na(biomass19) # empty entries appeared upon merge and they should be deleted
 
 str(sampleid_size_drymass)
-str(test)
+str(emptylines)
+
+labdata2019 <- merge(emptylines, pcrid_qubit_19, by = "SampleID_size", all = T) # add qubit measurement - NB concentration is DNA concentration of the purified DNA extract
+
+labdata2019 <- labdata2019[!(labdata2019$SampleID_size == ""), ] # remove empty rows
+labdata2019$SampleID <- ifelse(is.na(labdata2019$SampleID), labdata2019$SampleID_size, labdata2019$SampleID) # copy extraction blank sample IDs to the SampleID column
 
 #### merge & format data ###########
 mergedData$biomassUncertainty <- ""
-combdata <- rbind(mergedData, test) # merging biomass data fra 2018 and the 2019 sequencing run
 
-names(metadata)
+# check if columns match
+str(mergedData)
+str(labdata2019)
+combdata <- rbind(mergedData, labdata2019) # merging biomass data fra 2018 and the 2019 sequencing run
+
+names(metadata) # I think this should come from the 02_Sampling_data? update script from here to match output in script 02 or delete everything from here if unnecessary
 data <- merge(metadata, combdata, by = "SampleID")
 names(data)
 

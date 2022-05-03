@@ -9,32 +9,49 @@ library(seqinr)
 library(zoo)
 library(sp)
 library(lubridate)
+library(data.table)
 
 ### fwh primer ##########################
 
-# NB!!! we still need to make sure that all libraries are included - library 44 fails no matter how the analysis is carried out, but we should be able to get data from 40, 42 and 46(?) is we combine the different DADA2 runs. Also be aware that the data is from Novaseq6000 and HiSeq4000, and quality thresholds are much fewer for Novaseq data (4 instead of 20+) which is not handled well by the default parameters in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that one fails to detect the rare sequences/taxa. 
+# NB!!! Library 44 fails no matter how the analysis is carried out, but data from 40, 42 and 46 is included because we combine the different DADA2 runs (the three libraries also fail in some combinations of library processing with DADA2 and it is not due to tag overlap). Also be aware that the data is from Novaseq6000 and HiSeq4000, and quality thresholds are very different for Novaseq data (4 instead of 20+ fopr HiSeq) which is not handled well by the default parameters in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that we may fail to detect the rare sequences/taxa with the NovaSeq data. 
 
-#sequence data for the first sequenced libraries 1, 4, 10, 13, 16, 19, 22, 25, 28 (contains German samples), 31 (German samples - MISSING!), 34, 36, 38, 40, 42, (44 - fails in the DADA2 pipeline), 46  
+#sequence data for the first sequenced libraries 1, 4, 7 (German samples - MISSING!), 10, 13, 16, 19, 22, 25, 28 (contains German samples), 31 (German samples - MISSING!), 34, 36, 38, 40, 42 (contains German samples), (44 - fails in the DADA2 pipeline), 46  
 lulufied_1 <- readRDS("data/sequencing_data/firstrun/lulified_nochim_firstrun.RDS")
 otutable_1 <- lulufied_1[["curated_table"]] # extract the otutable
-names(otutable_1) # contains blanks, negatives, samples from 2018 and 2019 in Denmark, and samples from 2018 in Germany
+names(otutable_1) # contains blanks, negatives, samples from 2017 (IM17_*), 2018 (IM18*_) and 2019 (IM19_*) in Denmark, and samples from 2018 (X*) in Germany
 
 # the fasta file has been subset to only contain sequences with a length over 200 bp, so the asv table should only have asvs with the correct read length
 fastas_1 <- read.fasta("data/sequencing_data/firstrun/lulufied_otus_lengthcorrected_firstrun.fasta") # notice that there are fewer fastas than asvs - this is because we subset the fastas to be >200 bp (target length is 205 bp for the fwh primer) and the short sequences are discarded
 keep <- names(fastas_1)
-asvs_1 <- otutable_1[(rownames(otutable_1) %in% keep), ] # this removes 2632 asvs (not the correct length - note to future self: could any of these be true Hymenoptera reads?)
+asvs_1 <- otutable_1[(rownames(otutable_1) %in% keep), ] # this removes 2632 asvs (not the correct length - note to future self: could any of these be true Hymenoptera reads following Zizkas comment?)
 names(asvs_1)
+
+# check-up on sequences in samples
+min(colSums(asvs_1)) # 0
+mean(colSums(asvs_1)) # 82871.96
+median(colSums(asvs_1)) # 69470
+max(colSums(asvs_1)) # 444566
 
 # rename the German sample names that were numbers and had an X added to the beginning. If we put 'S_' instead of X, then they will match the second sequencing run - and we will add the year of the sampling, since the numbering started over in 2019 so it would cause duplicate names.
 
 names(asvs_1) <- asvs_1 %>% names() %>% str_replace("[X]", "S18_")
+check_de <- asvs_1 %>% dplyr:: select(starts_with("S"))
+names(check_de) # library 31 with samples 97-190 are missing - but also samples 191 to 206 from library 42 aren't there
 
 ##### taxonomy data #####
+# Data have been matched against a 99% clustered version of the BOLD Public Database v2022-02-22 public data (COI-5P sequences) All returned matches have then been matched against the GBIF backbone taxonomy by their identifier (e.g. BOLD:ADJ8357). These OTU identifiers can be used for publishing sequence based data to GBIF. The result can be downloaded as a csv with identifiers included.
 
-# get taxonomy assigned with the GBIF sequence ID tool March 17th (taxonomy_1) and March 18th (the other two)
-taxonomy_1 <- read.delim("data/sequencing_data/firstrun/blastresult(15).csv", sep = ",")
-taxonomy_2 <- read.delim("data/sequencing_data/firstrun/blastresult(16).csv", sep = ",")
-taxonomy_3 <- read.delim("data/sequencing_data/firstrun/blastresult(17).csv", sep = ",")
+### Match types ###
+#Blast exact match: identity >= 99% and queryCoverage >= 80%. This is within the threshold of the OTU.
+#Blast ambiguous match:	identity >= 99% and queryCoverage >= 80%, but there is at least one more match with similar identity
+#Blast close match: identity < 99% but > 90% and queryCoverage >= 80%. It is something close to the OTU, maybe the same Genus.
+#Blast weak match: there is a match, but with identity < 90% or/and queryCoverage < 80%. Depending on the quality of the sequence, bit score, identity and expect value, a higher taxon could be inferred from this.
+#Blast no match: No match. 
+
+# get taxonomy assigned with the GBIF sequence ID tool May 3rd 2022 (taxonomy_1) 
+taxonomy_1 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(18).csv", sep = ",") # 5,000 sequences, 99% with blast match, 85% with identity > 99%, 96% with GBIF backbone match
+taxonomy_2 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(19).csv", sep = ",") # 5,000 sequences, 96% with blast match, 69% with identity > 99%, 90% with GBIF backbone match
+taxonomy_3 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(20).csv", sep = ",") #  5,182 sequences, 72% with blast match, 39% with identity > 99%, 66% with GBIF backbone match
 
 # merge taxonomy data
 taxonomy <- rbind(taxonomy_1, taxonomy_2)
@@ -55,16 +72,25 @@ keep <- names(fastas_2)
 asvs_2 <- otutable_2[(rownames(otutable_2) %in% keep), ] # 3916 asvs are removed because they were too short
 names(asvs_2)
 
+# check-up on sequences in samples
+min(colSums(asvs_1)) # 0
+mean(colSums(asvs_1)) # 82871.96
+median(colSums(asvs_1)) # 69470
+max(colSums(asvs_1)) # 444566
+
 # rename the German samples so the year is included
 names(asvs_2) <- asvs_2 %>% names() %>% str_replace("[S]", "S19_")
 
 # NB!!! the main issue now is that both 2019 and 2019 German samples were sequenced in the second run - so the sample names probably need to be renamed in another way (based on sampling names or another logical way) instead of the solution above - otherwise it will be impossible to link the sequences to the correct samples 
 
 ##### taxonomy #####
-taxonomy_1_1 <- read.delim("data/sequencing_data/secondrun/blastresult(7).csv", sep = ",")
-taxonomy_2 <- read.delim("data/sequencing_data/secondrun/blastresult(8).csv", sep = ",")
-taxonomy_3 <- read.delim("data/sequencing_data/secondrun/blastresult(9).csv", sep = ",")
-taxonomy_4 <- read.delim("data/sequencing_data/secondrun/blastresult(10).csv", sep = ",")
+
+taxonomy_1_1 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(21).csv", sep = ",") #  5,000 sequences, 99.9% with blast match, 85% with identity > 99%, 97% with GBIF backbone match
+
+taxonomy_2 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(22).csv", sep = ",") #  5,000 sequences, 99.3% with blast match, 73% with identity > 99%, 94% with GBIF backbone match
+
+taxonomy_3 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(23).csv", sep = ",") #
+taxonomy_4 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(24).csv", sep = ",") #
 
 # merge taxonomy data
 taxonomy <- rbind(taxonomy_1_1, taxonomy_2)

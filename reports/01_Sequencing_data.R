@@ -38,6 +38,9 @@ names(asvs_1) <- asvs_1 %>% names() %>% str_replace("[X]", "S18_")
 check_de <- asvs_1 %>% dplyr:: select(starts_with("S"))
 names(check_de) # 237 samples out of 252 present (some negatives in there but most are discarded)
 
+# remove the German samples from the asv table since we will not include them in the analysis
+asvs_1 <- asvs_1 %>% dplyr:: select(!starts_with("S"))
+
 ##### taxonomy data #####
 # Data have been matched against a 99% clustered version of the BOLD Public Database v2022-02-22 public data (COI-5P sequences) All returned matches have then been matched against the GBIF backbone taxonomy by their identifier (e.g. BOLD:ADJ8357). These OTU identifiers can be used for publishing sequence based data to GBIF. The result can be downloaded as a csv with identifiers included.
 
@@ -48,11 +51,13 @@ names(check_de) # 237 samples out of 252 present (some negatives in there but mo
 #Blast weak match: there is a match, but with identity < 90% or/and queryCoverage < 80%. Depending on the quality of the sequence, bit score, identity and expect value, a higher taxon could be inferred from this.
 #Blast no match: No match. 
 
+# !TAX SHOULD BE UPDATED WITH THE STAGING VERSION USING CHECKLIST ANNOTATION INSTEAD OF THE BACKBONE
+
 # get taxonomy assigned with the GBIF sequence ID tool May 16th 2022 
-taxonomy_1 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult.csv", sep = ",") # 5,000 sequences, 99.2%with blast match, 85%, with identity > 99%, 96% with GBIF backbone match
-taxonomy_2 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(1).csv", sep = ",") # 5,000 sequences, 97% with blast match, 73% with identity > 99%, 92% with GBIF backbone match
-taxonomy_3 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(2).csv", sep = ",") #  5,000 sequences, 91% with blast match, 54% with identity > 99%, 84% with GBIF backbone match
-taxonomy_4 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool/blastresult(3).csv", sep = ",") # #  2,485 sequences, 45% with blast match, 19% with identity > 99%, 42% with GBIF backbone match
+taxonomy_1 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool_nonBackbone/blastresult(27).csv", sep = ",") # 5,000 sequences, 99.2%with blast match, 85%, with identity > 99%, 92% with identity >95%
+taxonomy_2 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool_nonBackbone/blastresult(28).csv", sep = ",") # 5,000 sequences, 97% with blast match, 73% with identity > 99%, 84% with identity >95%
+taxonomy_3 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool_nonBackbone/blastresult(29).csv", sep = ",") #  5,000 sequences, 91% with blast match, 54% with identity > 99%, 66% with identity >95%
+taxonomy_4 <- read.delim("data/sequencing_data/firstrun/GBIF_seq_id_tool_nonBackbone/blastresult(30).csv", sep = ",") # #  2,485 sequences, 45% with blast match, 19% with identity > 99%, 24% with identity >95%
 
 # merge taxonomy data
 taxonomy <- rbind(taxonomy_1, taxonomy_2)
@@ -61,18 +66,6 @@ taxonomy_1 <- rbind(taxonomy_1, taxonomy_4)
 
 taxa_1 <- taxonomy_1 # keep an output where taxstrings are not split up
 taxonomy_1 <- taxonomy_1 %>% separate(classification, c("kingdom", "phylum", "class", "order", "family", "genus", "species"), "_") #split the taxonomy string into ranks using the dplyr and tidyr package - there are a lot of warnings, but this is because NAs are put in where there taxonomy is not complete
-
-# split fasta into 50 sequences
-#subtax <- taxonomy_1[taxonomy_1$identity == '100', ] # only choose the sequences with a clear match
-#new_DF <- subtax[is.na(subtax$species),] # only choose sequences not identified to species level
-new_newDF <- subtax[is.na(subtax$kingdom),]
-
-#keep <- new_DF$occurrenceId
-#subfas <- fastas_1[(names(fastas_1) %in% keep)] # only keep those fastas that where defined above
-
-#chunk <- function(x, n) (mapply(function(a, b) (x[a:b]), seq.int(from=1, to=length(x), by=n), pmin(seq.int(from=1, to=length(x), by=n)+(n-1), length(x)), SIMPLIFY=FALSE))
-
-#fassplit <- chunk(subfas, 50) # output not saved in individual files yet - could be used for manual blast against BOLD (only 50 sequences per turn), to get the most updated taxonomy. But this would require 46 individual blast sessions just for the first sequencing run!
 
 #### second sequence run ####
 lulufied_2 <- readRDS("data/sequencing_data/secondrun/lulified_nochim_secondrun.RDS")
@@ -98,19 +91,22 @@ names(check_de)
 
 # NB!!! the main issue now is that both 2019 and 2019 German samples MAYBE were sequenced in the second run - so the sample names probably need to be renamed in another way (based on sampling names or another logical way) instead of the solution above - otherwise it will be impossible to link the sequences to the correct samples 
 
+# we will remove German samples from the analysis due to the issues mentioned above
+asvs_2 <- asvs_2 %>% dplyr:: select(!starts_with("S"))
+
 ##### taxonomy #####
+taxonomy_1_1 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool_nonBackbone/blastresult(31).csv", sep = ",") #   5,000 sequences, 99.9% with blast match, 85% with identity > 99%, 93% with identity >95%
 
-taxonomy_1_1 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(23).csv", sep = ",") #   5,000 sequences, 99.9% with blast match, 85% with identity > 99%, 97% with GBIF backbone match
+taxonomy_2 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool_nonBackbone/blastresult(32).csv", sep = ",") #   5,000 sequences, 99.3% with blast match, 73% with identity > 99%, 86% with identity >95%
 
-taxonomy_2 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(24).csv", sep = ",") #   5,000 sequences, 99.3% with blast match, 73% with identity > 99%, 94% with GBIF backbone match
+taxonomy_3 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool_nonBackbone/blastresult(33).csv", sep = ",") #  5,000 sequences 94% with blast match, 53% with identity > 99%, 66% with identity >95%
 
-taxonomy_3 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(25).csv", sep = ",") #  5,000 sequences 94% with blast match, 53% with identity > 99%, 87% with GBIF backbone match
-
-taxonomy_4 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool/blastresult(26).csv", sep = ",") #  1,121 sequences, 81% with blast match, 32% with identity > 99%, 74% with GBIF backbone match
+taxonomy_4 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool_nonBackbone/blastresult(34).csv", sep = ",") #  1,121 sequences, 81% with blast match, 32% with identity > 99%, 43% with identity >95%
 
 # merge taxonomy data
 taxonomy <- rbind(taxonomy_1_1, taxonomy_2)
 taxonomy_2 <- rbind(taxonomy, taxonomy_3)
+taxonomy_2 <- rbind(taxonomy_2, taxonomy_4)
 
 taxa_2 <- taxonomy_2
 taxonomy_2 <- taxonomy_2 %>% separate(classification, c("kingdom", "phylum", "class", "order", "family", "genus", "species"), "_") #split the taxonomy string into ranks using the dplyr and tidyr package
@@ -118,13 +114,31 @@ taxonomy_2 <- taxonomy_2 %>% separate(classification, c("kingdom", "phylum", "cl
 #### clean up the environment ####
 rm(lulufied_1)
 rm(lulufied_2)
-rm(asvtable_1)
-rm(asvtable_2)
 rm(keep)
+
+### merge the two sequence runs ####
+asvs_1 <- asvs_1 %>% rownames_to_column(var = "otuid") 
+asvs_2 <- asvs_2 %>% rownames_to_column(var = "otuid") 
+
+asvs <- merge(asvs_1, asvs_2, by = "otuid", all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs
+asvs <- asvs %>% column_to_rownames(var = "otuid")
+asvs[is.na(asvs)] <- 0 # replace na's with zeroes
+
+# check sample size
+min(colSums(asvs))
+mean(colSums(asvs))
+median(colSums(asvs))
+max(colSums(asvs))
+
+#### merge the taxonomy ####
+taxonomy <- merge(taxonomy_1, taxonomy_2, all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs
+
+# ADD NAME PARSER STEP HERE!
 
 ### minor edits to taxonomy ####
 
 # the best assigned taxonomy needs to be specified in intrespecificEpiphet and taxonRank
+
 # first assign the highest taxon rank
 names(taxonomy)
 taxonomy$taxonRank <- names(taxonomy[, c(8:14)])[max.col(!is.na(taxonomy[, c(8:14)]), "last")]
@@ -139,4 +153,10 @@ test2 <- test %>%
              as.list %>%
              as_tibble) %>% select(intraspecificEpithet)
 
-taxonomy <- cbind(taxonomy, test2)
+taxonomy <- cbind(taxonomy, test2) # how to deal with the 'no match' sequences? Should Biota be added as the domain (taxonRank = kingdom)? This is the hacky solution that is possible in GBIF right now
+
+# MATCH NAMES TO GBIF BACKBONE TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH THE BACKBONE (SINCE THE BACKBONE OCCASIONALLY REQUIRES AN UPDATE) - we will use taxize for this, Diana will carry out the check
+
+# save output
+write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = T, row.names = F, sep = "\t")
+write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")

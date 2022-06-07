@@ -16,13 +16,19 @@ library(tidyr)
 
 ### load buffer zone files #### 
 #oeko <- read.delim("covariate-data/DK_ruter2018_OekoAreas.txt") # oeko is now part of the buffer zone data
-hedge <- read.delim("covariate-data/DK_ruter2018_hegnAreas.txt")
-urbangreen <- read.delim("covariate-data/DK_ruter2018_urbGreenAreas.txt")
-nep <- read_delim("covariate-data/ruter2018buf500_NEP.txt","\t", escape_double = FALSE, trim_ws = TRUE)
-buf_50m <- read_delim("covariate-data/ruter2018buf50_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
-buf_250m <- read_delim("covariate-data/ruter2018buf250_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
-buf_500m <- read_delim("covariate-data/ruter2018buf500_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
-buf_1000m <- read_delim("covariate-data/ruter2018buf1000_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+hedge <- read.delim("data/environmental_data/covariate-data/DK_ruter2018_hegnAreas.txt")
+
+urbangreen <- read.delim("data/environmental_data/covariate-data/DK_ruter2018_urbGreenAreas.txt")
+
+nep <- read_delim("data/environmental_data/covariate-data/ruter2018buf500_NEP.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+
+buf_50m <- read_delim("data/environmental_data/covariate-data/ruter2018buf50_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+
+buf_250m <- read_delim("data/environmental_data/covariate-data/ruter2018buf250_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+
+buf_500m <- read_delim("data/environmental_data/covariate-data/ruter2018buf500_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+
+buf_1000m <- read_delim("data/environmental_data/covariate-data/ruter2018buf1000_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
 
 ##### WIDE format with tidyr: reformatting environmental data #######
 # transform oekodata from long to wide format prior to merging 
@@ -65,19 +71,19 @@ buf_250m$propLand_use <- NA
 buf_500m$propLand_use <- NA
 buf_1000m$propLand_use <- NA
 
-#wetland
+# define wetland cover
 buf_50m$propLand_use[buf_50m$type %in% c("Sø", "Mose", "Sø_organic", "Mose_organic")] <- "Wetland"
 buf_250m$propLand_use[buf_250m$type %in% c("Sø", "Mose", "Sø_organic", "Mose_organic")] <- "Wetland"
 buf_500m$propLand_use[buf_500m$type %in% c("Sø", "Mose", "Sø_organic", "Mose_organic")] <- "Wetland"
 buf_1000m$propLand_use[buf_1000m$type %in% c("Sø", "Mose", "Sø_organic", "Mose_organic")] <- "Wetland"
 
-#forest
+# define forest cover
 buf_50m$propLand_use[buf_50m$type %in% c("Skov","Skov_organic")] <- "Forest"
 buf_250m$propLand_use[buf_250m$type %in% c("Skov","Skov_organic")] <- "Forest"
 buf_500m$propLand_use[buf_500m$type %in% c("Skov","Skov_organic")] <- "Forest"
 buf_1000m$propLand_use[buf_1000m$type %in% c("Skov","Skov_organic")] <- "Forest"
 
-#agriculture
+# define agriculture (farmland) cover - NB there is recreative purposes and some afforestation codes in there that maybe should be removed?
 buf_50m$propLand_use[buf_50m$type %in% c("Ekstensiv", "Ekstensiv_organic", "Intensiv", "Intensiv_organic", "Markblok", "Markblok_organic", "Semi-intensiv", "Semi-intensiv_organic")] <- "Agriculture"
 buf_250m$propLand_use[buf_250m$type %in% c("Ekstensiv", "Ekstensiv_organic", "Intensiv", "Intensiv_organic", "Markblok", "Markblok_organic", "Semi-intensiv", "Semi-intensiv_organic")] <- "Agriculture"
 buf_500m$propLand_use[buf_500m$type %in% c("Ekstensiv", "Ekstensiv_organic", "Intensiv", "Intensiv_organic", "Markblok", "Markblok_organic", "Semi-intensiv", "Semi-intensiv_organic")] <- "Agriculture"

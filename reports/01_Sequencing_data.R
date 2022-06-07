@@ -10,6 +10,7 @@ library(zoo)
 library(sp)
 library(lubridate)
 library(data.table)
+library(rgbif)
 
 ### fwh primer ##########################
 
@@ -121,6 +122,7 @@ asvs_1 <- asvs_1 %>% rownames_to_column(var = "otuid")
 asvs_2 <- asvs_2 %>% rownames_to_column(var = "otuid") 
 
 asvs <- merge(asvs_1, asvs_2, by = "otuid", all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs
+
 asvs <- asvs %>% column_to_rownames(var = "otuid")
 asvs[is.na(asvs)] <- 0 # replace na's with zeroes
 
@@ -133,30 +135,56 @@ max(colSums(asvs))
 #### merge the taxonomy ####
 taxonomy <- merge(taxonomy_1, taxonomy_2, all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs
 
-# ADD NAME PARSER STEP HERE!
+### name parsing ####
+# since we use the BOLD checklist for assigning names, we get a lot of names that are not true Linnean names, e.g. OTU names and sp. placeholders. They need to be identified and the taxonomy should be reassigned to the most correct name
+
+# remove non-Linnean names (INFORMAL (a scientific name with some informal addition like "cf." or indetermined like Abies spec.) and OTU names) from genus rank names
+genus_parsed <- taxonomy %>%
+  mutate(parsed = rgbif::parsenames(genus)) %>%
+  tidyr::unnest(cols = "parsed") %>% mutate_at(vars(genus), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(genus), ~ replace(., type == "OTU", NA))
+
+# remove the parse columns so we can parse species after genus is parsed
+genus_noparse <- genus_parsed[, c(1:15)]
+
+genus_species_parsed <-
+  genus_noparse %>% mutate(parsed = rgbif::parsenames(species)) %>% tidyr::unnest(cols = "parsed") %>% mutate_at(vars(species), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(species), ~ replace(., type == "OTU", NA))
+
+# summarize the difference
+table(is.na(taxonomy$species)) # 12244 species with no name
+table(is.na(genus_species_parsed$species)) # 13067 species with no name
+13067-12244 # 843 names were not correct out of 17485 records
+
+# NB! I noticed wild boar in the sequences - remember to remove non-arthropods prior to analysis AND any weird class-level IDs as well, e.g. sea spiders (!?)
 
 ### minor edits to taxonomy ####
 
-# the best assigned taxonomy needs to be specified in intrespecificEpiphet and taxonRank
+# the best assigned taxonomy needs to be specified in infraspecificEpithet  and taxonRank
 
 # first assign the highest taxon rank
-names(taxonomy)
-taxonomy$taxonRank <- names(taxonomy[, c(8:14)])[max.col(!is.na(taxonomy[, c(8:14)]), "last")]
+names(genus_species_parsed)
+genus_species_parsed$taxonRank <- names(genus_species_parsed[, c(8:14)])[max.col(!is.na(genus_species_parsed[, c(8:14)]), "last")]
 
 # add intraspecificEpithet  - not the most optimal solution perhaps, but it works
-test <- taxonomy[, c(8:14)]
-test$intraspecificEpithet <- NA
+test <- genus_species_parsed[, c(8:14)]
+test$infraspecificEpithet <- NA
 
-test2 <- test %>% 
-  mutate(intraspecificEpithet = as.character(intraspecificEpithet)) %>%
+epithet <- test %>% 
+  mutate(infraspecificEpithet = as.character(infraspecificEpithet)) %>%
   pmap_dfr(., ~ na.locf(c(...)) %>%
              as.list %>%
-             as_tibble) %>% select(intraspecificEpithet)
+             as_tibble) %>% select(infraspecificEpithet)
 
-taxonomy <- cbind(taxonomy, test2) # how to deal with the 'no match' sequences? Should Biota be added as the domain (taxonRank = kingdom)? This is the hacky solution that is possible in GBIF right now
+genus_species_parsed <- genus_species_parsed %>% select(!infraspecificepithet)
+
+taxonomy_cleaned <- cbind(genus_species_parsed, epithet) # how to deal with the 'no match' sequences? Should Biota be added as the domain (taxonRank = kingdom)? This is the hacky solution that is possible in GBIF right now
+
+#### remove unwanted IDs ####
+unique(taxonomy_cleaned$class)
+
+taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnida', 'Insecta'), ] # 22990 records
 
 # MATCH NAMES TO GBIF BACKBONE TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH THE BACKBONE (SINCE THE BACKBONE OCCASIONALLY REQUIRES AN UPDATE) - we will use taxize for this, Diana will carry out the check
 
 # save output
-write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = T, row.names = F, sep = "\t")
-write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")
+#write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = T, row.names = F, sep = "\t")
+#write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")

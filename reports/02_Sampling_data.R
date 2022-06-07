@@ -16,43 +16,66 @@ metadata_2 <- metadata_2 %>% rename(subLandUseType = SubLandUseType)
 #### merge metadata ####
 metadata <- merge(metadata_1, metadata_2, all = TRUE)
 
-#### coordinates and other locality data ####
+# add routeid and sampleid link for both years
+routesample2018 <- read_delim("data/sampling_data/pilotTripIdToRouteID2018.txt", 
+                          delim = ";", escape_double = FALSE, 
+                          trim_ws = TRUE)
 
-labeldata_1 <- read.delim("data/sampling_data/sampling_event_label_data.txt")
-str(labeldata_1)
-labeldata_2 <- read.delim("data/sampling_data/ethanol_labels_placenames_landuse_2019.txt")
-str(labeldata_2)
+routesample2019 <- read_delim("data/sampling_data/pilotTripIdToRouteID2019.txt", 
+                              delim = "\t", escape_double = FALSE, 
+                              trim_ws = TRUE)
 
-##### align label data and merge #####
-# first select the same columns as in label data 1
-labeldata_2 <- labeldata_2 %>% select(Sample.ID, LandUseType, StartTime.y, EndTime.y, DOFAtlasQuadrantID, name, utm_x, utm_y)
+names(routesample2019)
 
-labeldata_1 <- labeldata_1 %>% select(SampleID_size, LandUSeType, StartTime, EndTime, DOFAtlasQuadrantID, Location, utm_x, utm_y)
+routesample2019 <- routesample2019 %>% rename(RouteID_JB = `Rute_adresse-ID`) %>% select(RouteID_JB, PIDRouteID)
 
-# rename columns to match
-labeldata_2 <- labeldata_2 %>% rename(SampleID_size = Sample.ID)
-labeldata_1 <- labeldata_1 %>% rename(LandUseType = LandUSeType)
-labeldata_2 <- labeldata_2 %>% rename(Location = name)
-labeldata_2 <- labeldata_2 %>% rename(StartTime = StartTime.y)
-labeldata_2 <- labeldata_2 %>% rename(EndTime = EndTime.y)
-str(labeldata_1)
-str(labeldata_2) # now they match
+# add a PIDRouteID to metadata
+metadata <- merge(metadata, routesample2018, by.x = "SampleID", by.y = "PilotTripID", all.x = T)
 
-#merge
-labeldata <- merge(labeldata_1, labeldata_2, all = T)
-#labeldata is the data used to generate the labels for the physical samples in the Natural History Museum of Denmarks ethanol collection (label within each sample tube). The samples are stored under ACC.NO. 2018-EN-001
+metadata$PIDRouteID <- metadata$SampleID 
+metadata <- metadata %>% mutate(PIDRouteID = gsub("A", "", PIDRouteID)) %>% mutate(PIDRouteID = gsub("B", "", PIDRouteID))
+
+metadata <- merge(metadata, routesample2019, by = c("PIDRouteID"), all.x = T)
+
+# make a combined RouteID_JB column
+metadata <- metadata %>%
+  mutate(RouteID_JB = coalesce(RouteID_JB.x,RouteID_JB.y))
+
+# remove the redundant columns
+metadata <- metadata %>% select(-RouteID_JB.x, -RouteID_JB.y)
+
+###### add coordinates for route centroids ######
+coord_1 <- read_delim("data/sampling_data/DK_ruter2018_pkt_koordinater.txt", 
+                      delim = "\t", escape_double = FALSE, 
+                      locale = locale(decimal_mark = ","), 
+                      trim_ws = TRUE)
+coord_2 <- read_delim("data/sampling_data/ruter2019_koordinater_DOFKvadr.txt", 
+                      delim = "\t", escape_double = FALSE, 
+                      trim_ws = TRUE) # the route IDs a re currently wrong - the way they are added here, we have no idea
+
+# check which columns match
+names(coord_1)
+names(coord_2)
+
+# align columns
+coord_1 <- coord_1 %>% select(routeID, utm_x, utm_y)
+coord_2 <- coord_2 %>% select(routeID, utm_x, utm_y)
+
+# combine coordinates
+coords <- merge(coord_1, coord_2, all = T)
+str(coords)
 
 ###### transform utm into decimal degrees ######
 
 # the few lines below used to work but due to updates on the rgdal package it crashes
 
-#utmcoor<-SpatialPoints(cbind(labeldata$utm_x,labeldata$utm_y), proj4string=CRS("+init=epsg:25832"))
+#utmcoor<-SpatialPoints(cbind(coords$utm_x,coords$utm_y), proj4string=CRS("+init=epsg:25832"))
 #longlatcoor<-sp::spTransform(utmcoor,CRS("+proj=longlat"))
 #labeldata$decimalLongitude <- coordinates(longlatcoor)[,1]
 #labeldata$decimalLatitude <- coordinates(longlatcoor)[,2]
 
 # work-around solution
-test <- labeldata
+test <- coords
 coordinates(test) <- c("utm_x", "utm_y")
 proj4string(test) <- CRS("+init=epsg:25832")
 summary(test)
@@ -60,181 +83,14 @@ summary(test)
 test2 <- spTransform(test, CRS("+proj=longlat"))
 summary(test2)
 
-labeldata$decimalLongitude <- coordinates(test2)[,1]
-labeldata$decimalLatitude <- coordinates(test2)[,2]
+coords$decimalLongitude <- coordinates(test2)[,1]
+coords$decimalLatitude <- coordinates(test2)[,2]
 
-### standardise the sublanduse category ####
-unique(data$subLandUseType) # 89 unique
+### examine differences in samples ##########################
+setdiff(coords$SampleID, metadata$routeID) # all metadata are in labeldata
+setdiff(metadata$SampleID, coords$SampleID) # not all metadata are in labeldata
 
-test <- data %>%
-  mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "strandeng, mose, eng, sø",
-      "marsh, bog, meadow, lake"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "hede", "heath")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "mose, eng, sø",
-      "bog, meadow, lake"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "eng, mose", "meadow, bog")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "hede, overdrev",
-      "heath, pasture"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intensive, markblok",
-      "intensive, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intensive, semi-intensive, markblok",
-      "intensive, semi-intensive, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType, 
-      subLandUseType == "overdrev", "pasture"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "mose, sø", "bog, lake")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "overdrev, intensive, extensive",
-      "pasture, intensive, extensive"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "tør, mark, våd",
-      "dry, agriculture, wet"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "sø", "lake")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intesive, extensive, markblok",
-      "intensive, extensive, agricultural field"
-    )
-  ) %>% mutate(subLandUseType = replace(
-    subLandUseType,
-    subLandUseType == "strandeng, eng",
-    "marsh, meadow"
-  )) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "eng, mose, sø",
-      "bog, meadow, lake"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "eng", "meadow")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "sø, mose, eng",
-      "bog, meadow, lake"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "sø, mose", "bog, lake")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "strandeng, sø, mose",
-      "marsh, lake, bog"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "mose, eng", "meadow, bog")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "eng, mose, strandeng, sø",
-      "marsh, bog, meadow, lake"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "pasture, agricultureblock",
-      "pasture, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intensive, markblock",
-      "intensive, agricultural field"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "strandeng, sø", "marsh, lake")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intensive, agricultureblock",
-      "intensive, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "intensive, extensive, agricultureblock",
-      "intensive, extensive, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "agricultureblock, extensive, intensive, semi_intensive",
-      "agricultural field, extensive, intensive, semi_intensive"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "0", "")) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "hede/overdrev",
-      "heath, pasture"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "strandeng, mose, sø",
-      "marsh, bog, lake"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "overdrev, strandeng, sø",
-      "pasture, marsh, lake"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "overdrev, markblok",
-      "pasture, agricultural field"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "eng, mose, sø, strandeng",
-      "marsh, bog, meadow, lake"
-    )
-  ) %>% mutate(subLandUseType = replace(subLandUseType, subLandUseType == "intesive", "intensive")) %>% mutate(
-    subLandUseType=replace(
-      subLandUseType, 
-      subLandUseType=="sø, strandeng", "lake, marsh"
-    )
-  ) %>% mutate(subLandUseType=replace(subLandUseType, subLandUseType=="strandeng", "marsh")) %>% mutate(
-    subLandUseType=replace(
-      subLandUseType, subLandUseType=="eng, sø", "meadow, lake"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "eng, overdrev",
-      "meadow, pasutre"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(subLandUseType, subLandUseType == "mose", "bog"
-    )
-  ) %>% mutate(
-    subLandUseType = replace(
-      subLandUseType,
-      subLandUseType == "markblok, extensive, intensive, semi-intensive",
-      "agricultural field, extensive, intensive, semi_intensive"
-    )
-  )
-
-### time & date formatting ##########################
+### time & date formatting ########################## NOT DONE! still also need to merge it all in the end and make sure no data is missing
 test <- data
 test <- test %>% separate(Date, c("day", "month", "year"))
 test <- test %>%

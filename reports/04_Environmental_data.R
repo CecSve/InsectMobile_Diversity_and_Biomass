@@ -1,6 +1,6 @@
 # Standardising environmental data
 
-# preparing DK landuse data prepared by Jesper Bladt in GIS. README file in H:\Documents\Insektmobilen\Data\Arealanvendelse_Århus\2018_bufferzones_data\Final_buffers_2018 (Cecilie Svenningsens work drive). README should be included in final git submission. 
+# preparing DK landuse data prepared by Aarhus University (JB) in GIS. README file in H:\Documents\Insektmobilen\Data\Arealanvendelse_Århus\2018_bufferzones_data\Final_buffers_2018 (Cecilie Svenningsens work drive). README should be included in final git submission. 
 
 # based on script 02_DK_environDaat_processing.R from the Biomass git
 

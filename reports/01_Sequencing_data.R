@@ -152,7 +152,7 @@ genus_species_parsed <-
 # summarize the difference
 table(is.na(taxonomy$species)) # 12244 species with no name
 table(is.na(genus_species_parsed$species)) # 13067 species with no name
-13067-12244 # 843 names were not correct out of 17485 records
+13067-12244 # 843 asvs were assigned with project-related names out of 17485 asvs
 
 # NB! I noticed wild boar in the sequences - remember to remove non-arthropods prior to analysis AND any weird class-level IDs as well, e.g. sea spiders (!?)
 
@@ -183,7 +183,10 @@ unique(taxonomy_cleaned$class)
 
 taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnida', 'Insecta'), ] # 22990 records
 
-# MATCH NAMES TO GBIF BACKBONE TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH THE BACKBONE (SINCE THE BACKBONE OCCASIONALLY REQUIRES AN UPDATE) - we will use taxize for this, Diana will carry out the check
+# current output
+# write.table(taxonomy_cleaned_sub, file= "data/sequencing_data/taxonomy_cleaned_sub.txt", sep="\t", col.names = T, row.names = F)
+
+# MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH - we will use taxize for this, Diana will carry out the check
 
 # save output
 #write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = T, row.names = F, sep = "\t")

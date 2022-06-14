@@ -1,8 +1,65 @@
-# Merge datatables prior to analysis - this script should generate the final table(s) for analysis and the output to be shared in a datasharing repository (journal specific)
+# Merge data tables prior to analysis - this script should generate the final table(s) for analysis and the output to be shared in a data sharing repository (journal specific)
 
-### merge with PCRID ############
-test <- rbind(sampleid_size_pcrid_concentration, pcrid_qubit_19)
-data <- merge(data, test, by = "SampleID_size")
+### read in cleaned data tables ############
+
+# sampling metadata
+sampling_data <-
+  read_delim(
+    "data/sampling_data/sampling_data_cleaned.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    trim_ws = TRUE
+  )
+
+# samples processed in the lab
+lab_data <-
+  read_delim(
+    "data/lab_data/lab_data_cleaned.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    trim_ws = TRUE
+  )
+
+asv_table <-
+  read_delim(
+    "data/sequencing_data/asvtable.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    trim_ws = TRUE
+  )
+
+# NB! prior to taxize edits!
+taxonomy_data <-
+  read_delim(
+    "data/sequencing_data/taxonomy_cleaned_sub.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    trim_ws = TRUE
+  )
+
+# get summaries of how many samples there is for each variable and their levels
+length(unique(sampling_data[["RouteID_JB"]])) # how many routes were sampled 
+length(unique(sampling_data[["PID"]])) # how many pilots that carried out the sampling
+length(unique(sampling_data[["SampleID"]])) # how many samples
+data.frame(table(sampling_data$Wind)) # how often were the different wind categories registered 
+data.frame(table(sampling_data$Temperature)) # how many samples were collected at different temperature intervals
+data.frame(table(sampling_data$eventDate)) # how many samples per day
+
+# NB GOT TO HERE - NEED TO MERGE SAMPLES IN THE ASV TABLE - this means that the code below is just notes, and needs to be finalised
+
+### merging total samples from size sorted samples ###########
+# 
+data_unique <- data %>% distinct(SampleID, .keep_all = TRUE)
+keep <- data %>% dplyr::select(PCRID, SampleID)
+
+t.asvs <- t(asvs)
+t.asvs <- as.data.frame(t.asvs) %>% rownames_to_column(var = "PCRID") 
+test <- full_join(keep, t.asvs, by = "PCRID")
+
+test2 <- test %>% select(-PCRID) %>% group_by(SampleID) %>% summarise_all(list(sum))
+
+totsample_asvs <- test2 %>% column_to_rownames(var = "SampleID")
+totsample_asvs <- as.data.frame(t(totsample_asvs))
 
 #### match asvtable data with lab meta data (not all samples were sequenced) ####
 keep <- colnames(asvs)

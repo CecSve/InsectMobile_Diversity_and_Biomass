@@ -62,8 +62,8 @@ coord_1 <- coord_1 %>% select(routeID, utm_x, utm_y)
 coord_2 <- coord_2 %>% select(routeID, utm_x, utm_y)
 
 # combine coordinates
-coords <- merge(coord_1, coord_2, all = T)
-str(coords)
+#coords <- merge(coord_1, coord_2, all = T)
+#str(coords)
 
 ###### transform utm into decimal degrees ######
 
@@ -75,7 +75,7 @@ str(coords)
 #labeldata$decimalLatitude <- coordinates(longlatcoor)[,2]
 
 # work-around solution
-test <- coords
+test <- coord_1
 coordinates(test) <- c("utm_x", "utm_y")
 proj4string(test) <- CRS("+init=epsg:25832")
 summary(test)
@@ -83,15 +83,41 @@ summary(test)
 test2 <- spTransform(test, CRS("+proj=longlat"))
 summary(test2)
 
-coords$decimalLongitude <- coordinates(test2)[,1]
-coords$decimalLatitude <- coordinates(test2)[,2]
+coord_1$decimalLongitude <- coordinates(test2)[,1]
+coord_1$decimalLatitude <- coordinates(test2)[,2]
+
+# work-around solution
+test <- coord_2
+coordinates(test) <- c("utm_x", "utm_y")
+proj4string(test) <- CRS("+init=epsg:25832")
+summary(test)
+
+test2 <- spTransform(test, CRS("+proj=longlat"))
+summary(test2)
+
+coord_2$decimalLongitude <- coordinates(test2)[,1]
+coord_2$decimalLatitude <- coordinates(test2)[,2]
 
 ### examine differences in samples ##########################
-setdiff(coords$SampleID, metadata$routeID) # all metadata are in labeldata
-setdiff(metadata$SampleID, coords$SampleID) # not all metadata are in labeldata
+#setdiff(coords$SampleID, metadata$routeID) # all metadata are in labeldata
+#setdiff(metadata$SampleID, coords$SampleID) # not all metadata are in labeldata
+
+# combine metadata and coordination data
+test <- left_join(metadata, coord_1, by = c("RouteID_JB" = "routeID"), keep = T)
+test <- test %>% select(-routeID)
+test2 <- left_join(test, coord_2, by = c("PIDRouteID" = "routeID"))
+
+# bit of a mess because of different routeIDs used between the years so we need to merge the columns 
+metadata_coords <-
+  test2 %>% mutate(utm_x = coalesce(utm_x.x, utm_x.y)) %>% mutate(utm_y = coalesce(utm_y.x, utm_y.y)) %>% mutate(decimalLongitude = coalesce(decimalLongitude.x, decimalLongitude.y)) %>% mutate(decimalLatitude = coalesce(decimalLatitude.x, decimalLatitude.y)) 
+
+str(metadata_coords)
+
+# only select the combined and correct columns
+metadata <- metadata_coords %>% select(-utm_x.x, -utm_y.x, -utm_x.y, -utm_y.y, -decimalLongitude.x, -decimalLatitude.x, -decimalLongitude.y, -decimalLatitude.y)
 
 ### time & date formatting ########################## NOT DONE! still also need to merge it all in the end and make sure no data is missing
-test <- data
+test <- metadata
 test <- test %>% separate(Date, c("day", "month", "year"))
 test <- test %>%
   mutate(year=replace(year, year=="2010", "2019")) # correct typo
@@ -100,7 +126,7 @@ test <- test %>% separate(EndTime, c("hour2", "minute2", "second2"))
 
 str(test)
 names(test)
-test[, c(4:12)] <- test[, c(4:12)] %>% mutate_if(is.character,as.integer) # change values into integers instead of characters
+test[, c(6:14)] <- test[, c(6:14)] %>% mutate_if(is.character,as.integer) # change values into integers instead of characters
 str(test)
 
 Sys.timezone(location = TRUE)
@@ -117,5 +143,7 @@ test <- cbind(test, eventStart, eventEnd)
 str(test)
 
 # create eventTime interval
-data$eventTime <- paste(test$eventStart, test$eventEnd, sep="/")
-data <- data %>% rename(eventDate = Date)
+metadata$eventTime <- paste(test$eventStart, test$eventEnd, sep="/")
+metadata <- metadata %>% rename(eventDate = Date)
+
+write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)

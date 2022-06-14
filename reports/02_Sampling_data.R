@@ -163,6 +163,7 @@ metadata$Distance_driven <- '10000'
 metadata <- metadata %>% mutate(Wind=recode(Wind, 
                                     "Gentle breeze 3.4-5.5" = "gentle breeze 3.4-5.5",
                                     "Light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
+                                    "light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
                                     "Moderate breeze 5.5-7.9" = "moderate breeze 5.5-7.9"))
 
 # standardise temperature

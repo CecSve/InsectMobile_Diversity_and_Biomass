@@ -146,4 +146,53 @@ str(test)
 metadata$eventTime <- paste(test$eventStart, test$eventEnd, sep="/")
 metadata <- metadata %>% rename(eventDate = Date)
 
+# make a column for whether sampling was midday or evening
+time <- as.POSIXct(strptime(metadata$StartTime, "%H:%M"), "UTC")
+x = as.POSIXct(strptime(c("120000", "150000", "170000", "200000"), "%H%M%S"), "UTC")
+metadata$Time_band <-
+  case_when(between(time, x[1], x[2]) ~ "midday", between(time, x[3], x[4]) ~
+              "evening")
+
+# adding a column for route length
+metadata$Route_length <- '5000'
+
+# Add Distance_driven which is 10000 for DK data
+metadata$Distance_driven <- '10000'
+
+# standardise wind
+metadata <- metadata %>% mutate(Wind=recode(Wind, 
+                                    "Gentle breeze 3.4-5.5" = "gentle breeze 3.4-5.5",
+                                    "Light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
+                                    "Moderate breeze 5.5-7.9" = "moderate breeze 5.5-7.9"))
+
+# standardise temperature
+metadata <- metadata %>% mutate(Temperature=recode(Temperature, 
+                                            "15-20" = "15-19",
+                                            "20-25" = "20-24"))
+
+#format Date
+metadata$Date <- as.Date(metadata$eventDate, "%d-%m-%Y")
+str(metadata)
+metadata$yDay <- yday(metadata$Date)
+
+# Add time driven column Time_driven
+# convert the time columns to datetimes
+test <- metadata
+str(test)
+test$StartTime <- as.POSIXct(metadata$StartTime,
+                             format='%H:%M:%S')
+test$EndTime   <- as.POSIXct(metadata$EndTime,
+                             format='%H:%M:%S')
+
+metadata$Time_driven <- difftime(test$EndTime, test$StartTime, units = "mins") 
+
+# setting route_length and distance_driven as numeric values
+metadata$Route_length <- as.double(metadata$Route_length)
+metadata$Distance_driven <- as.double(metadata$Distance_driven)
+metadata$Time_driven <- as.double(metadata$Time_driven)
+
+# Add Velocity (Route_length*2)/Time_driven - we think it could account for some of the variation between samples, especially urban (many stops)
+str(metadata)
+metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
+
 write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)

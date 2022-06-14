@@ -56,4 +56,5 @@ labdata <- labdata %>%
   mutate(concentration = ifelse(as.character(concentration) == "too high", "100", as.character(concentration)))
 
 # save output
-write.table(labdata, file = "data/lab_data/lab_data_cleaned.txt", sep = "\t", row.names = F)
+saveRDS(labdata, file = "data/lab_data/lab_data_cleaned.rds")
+#write.table(labdata, file = "data/lab_data/lab_data_cleaned.txt", sep = "\t", row.names = F)

@@ -196,4 +196,5 @@ metadata$Time_driven <- as.double(metadata$Time_driven)
 str(metadata)
 metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
 
-write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)
+#write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)
+saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")

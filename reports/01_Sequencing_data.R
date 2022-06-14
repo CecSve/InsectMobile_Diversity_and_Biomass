@@ -189,5 +189,7 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH - we will use taxize for this, Diana will carry out the check
 
 # save output
-write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = NA, sep = "\t")
+saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")
+saveRDS(asvs, file = "data/sequencing_data/asvs.rds")
+#write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = NA, sep = "\t")
 #write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")

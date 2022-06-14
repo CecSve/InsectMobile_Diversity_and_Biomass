@@ -42,5 +42,18 @@ str(mergedData)
 str(labdata2019)
 combdata <- rbind(mergedData, labdata2019) # merging lab processed data from 2018 and 2019
 
+# standardise qubit measurement values by changing too low to zero and too high readings to 100
+test <- combdata %>% 
+  mutate(concentration = ifelse(as.character(concentration) == "too low", "0", as.character(concentration))) 
+
+labdata <- test %>% 
+  mutate(concentration = ifelse(as.character(concentration) == "Too low", "0", as.character(concentration)))
+
+labdata <- labdata %>% 
+  mutate(concentration = ifelse(as.character(concentration) == "Too Low", "0", as.character(concentration)))
+
+labdata <- labdata %>% 
+  mutate(concentration = ifelse(as.character(concentration) == "too high", "100", as.character(concentration)))
+
 # save output
-write.table(combdata, file = "data/lab_data/lab_data_cleaned.txt", sep = "\t", row.names = F)
+write.table(labdata, file = "data/lab_data/lab_data_cleaned.txt", sep = "\t", row.names = F)

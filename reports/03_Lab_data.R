@@ -40,17 +40,7 @@ mergedData$biomassUncertainty <- ""
 # check if columns match
 str(mergedData)
 str(labdata2019)
-combdata <- rbind(mergedData, labdata2019) # merging biomass data fra 2018 and the 2019 sequencing run
+combdata <- rbind(mergedData, labdata2019) # merging lab processed data from 2018 and 2019
 
-names(metadata) # I think this should come from the 02_Sampling_data? update script from here to match output in script 02 or delete everything from here if unnecessary
-data <- merge(metadata, combdata, by = "SampleID")
-names(data)
-
-# reformat to fit occurrence core standard for biomass - will be changed to MeasurementOrFact later in the script
-data <- data %>% rename(organismQuantity = DryMass_mg)
-names(data)
-data$organismQuantityType <- "mgbiomass"
-
-### merge with PCRID ############
-test <- rbind(sampleid_size_pcrid_concentration, pcrid_qubit_19)
-data <- merge(data, test, by = "SampleID_size")
+# save output
+write.table(combdata, file = "data/lab_data/lab_data_cleaned.txt", sep = "\t", row.names = F)

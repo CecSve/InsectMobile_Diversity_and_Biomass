@@ -186,25 +186,31 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # current output
 # write.table(taxonomy_cleaned_sub, file= "data/sequencing_data/taxonomy_cleaned_sub.txt", sep="\t", col.names = T, row.names = F)
 
-# MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH 
+# MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - 
+# THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH 
 # we will use taxize for this, Diana will carry out the check
 
 library(taxize)
 
-#species names
+#get all species names
 allSpecies <- taxonomy_cleaned_sub %>%
   filter(!is.na(species)) %>%
   pull(species) %>%
   unique() 
 
+#check with gbif parse
 checkSpecies <- allSpecies %>% map_dfr(gbif_parse) %>%
                   add_column(originalName = allSpecies)
-mean(checkSpecies$parsed==TRUE)
 
-checkSpecies %>%
-  filter(parsed==FALSE)
+mean(checkSpecies$parsed==TRUE) # proportion that pass
 
-che
+#which ones don't parse
+missingSpecies <- checkSpecies %>%
+                    filter(parsed==FALSE)
+
+#get all synonyms for those that parsed
+temp <- synonyms(allSpecies, db='itis')
+allSynonyms <- synonyms_df(temp)
 
 # save output
 saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")

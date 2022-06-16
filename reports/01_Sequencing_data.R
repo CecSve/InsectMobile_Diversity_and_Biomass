@@ -215,6 +215,10 @@ bold_search(missingSpecies$scientificname)
 temp <- synonyms(allSpecies, db='itis')
 allSynonyms <- synonyms_df(temp)
 
+#check if we have duplicate species 
+allSynonyms %>%
+  filter(duplicated(syn_name))
+
 # save output
 saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")
 saveRDS(asvs, file = "data/sequencing_data/asvs.rds")

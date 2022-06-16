@@ -206,7 +206,10 @@ mean(checkSpecies$parsed==TRUE) # proportion that pass
 
 #which ones don't parse
 missingSpecies <- checkSpecies %>%
-                    filter(parsed==FALSE)
+                    filter(parsed==FALSE) %>%
+                    separate
+
+bold_search(missingSpecies$scientificname)
 
 #get all synonyms for those that parsed
 temp <- synonyms(allSpecies, db='itis')

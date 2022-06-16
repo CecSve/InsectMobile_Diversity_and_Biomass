@@ -206,14 +206,15 @@ mean(checkSpecies$parsed==TRUE) # proportion that pass
 
 #which ones don't parse
 missingSpecies <- checkSpecies %>%
-                    filter(parsed==FALSE) %>%
-                    separate
+                    filter(parsed==FALSE)
 
 bold_search(missingSpecies$scientificname)
 
 #get all synonyms for those that parsed
 temp <- synonyms(allSpecies, db='itis')
 allSynonyms <- synonyms_df(temp)
+
+#rgbif - check names against catalogue of life
 
 #check if we have duplicate species 
 allSynonyms %>%

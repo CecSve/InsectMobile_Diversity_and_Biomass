@@ -12,6 +12,12 @@ library(data.table)
 library(ggpubr)
 library(tidyr)
 
+#check all routes in the sampling data 
+# jasper had his own IDs
+# he used our ID
+
+#sampling data overlap names with covariate data
+
 #### 2018 data #####
 
 ### load buffer zone files #### 

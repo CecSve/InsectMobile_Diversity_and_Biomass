@@ -190,13 +190,21 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # we will use taxize for this, Diana will carry out the check
 
 library(taxize)
-#check gbif_parse
+
+#species names
 allSpecies <- taxonomy_cleaned_sub %>%
   filter(!is.na(species)) %>%
   pull(species) %>%
   unique() 
 
-checkSpecies <- allSpecies %>% map_dfr(gbif_parse)
+checkSpecies <- allSpecies %>% map_dfr(gbif_parse) %>%
+                  add_column(originalName = allSpecies)
+mean(checkSpecies$parsed==TRUE)
+
+checkSpecies %>%
+  filter(parsed==FALSE)
+
+che
 
 # save output
 saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")

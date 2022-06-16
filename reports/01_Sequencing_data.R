@@ -186,7 +186,17 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # current output
 # write.table(taxonomy_cleaned_sub, file= "data/sequencing_data/taxonomy_cleaned_sub.txt", sep="\t", col.names = T, row.names = F)
 
-# MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH - we will use taxize for this, Diana will carry out the check
+# MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH 
+# we will use taxize for this, Diana will carry out the check
+
+library(taxize)
+#check gbif_parse
+allSpecies <- taxonomy_cleaned_sub %>%
+  filter(!is.na(species)) %>%
+  pull(species) %>%
+  unique() 
+
+checkSpecies <- allSpecies %>% map_dfr(gbif_parse)
 
 # save output
 saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")

@@ -186,6 +186,13 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # current output
 # write.table(taxonomy_cleaned_sub, file= "data/sequencing_data/taxonomy_cleaned_sub.txt", sep="\t", col.names = T, row.names = F)
 
+# save output
+#saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")
+#saveRDS(asvs, file = "data/sequencing_data/asvs.rds")
+#write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = NA, sep = "\t")
+#write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")
+
+
 # MATCH NAMES TO CURRENT TAXONOMIC STATUS TO MAKE SURE WE HAVE THE ACCPTED NAMES (AND KNOW THE SYNONYMS) - 
 # THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH 
 # we will use taxize for this, Diana will carry out the check
@@ -208,20 +215,20 @@ mean(checkSpecies$parsed==TRUE) # proportion that pass
 missingSpecies <- checkSpecies %>%
                     filter(parsed==FALSE)
 
-bold_search(missingSpecies$scientificname)
-
-#get all synonyms for those that parsed
-temp <- synonyms(allSpecies, db='itis')
-allSynonyms <- synonyms_df(temp)
+bold_search(missingSpecies$scientificname) # this should be fixed in the section above
 
 #rgbif - check names against catalogue of life
 
-#check if we have duplicate species 
-allSynonyms %>%
-  filter(duplicated(syn_name))
+#check species
+checkSpecies <- lapply(allSpecies, function(x){
+  name_backbone(name = x, rank="species")
+}) %>%
+  reduce(bind_rows)
 
-# save output
-saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")
-saveRDS(asvs, file = "data/sequencing_data/asvs.rds")
-#write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = NA, sep = "\t")
-#write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")
+#how many synonymsn do we have?
+table(checkSpecies$status)
+
+synonym <- checkSpecies %>%
+            filter(status!="ACCEPTED")
+
+#the species column contains the accepted names for these species

@@ -2,8 +2,6 @@
 
 # preparing DK landuse data prepared by JB in GIS. README file in H:\Documents\Insektmobilen\Data\Arealanvendelse_Århus\2018_bufferzones_data\Final_buffers_2018 (Cecilie Svenningsens work drive). README should be included in final git submission. 
 
-# based on script 02_DK_environDaat_processing.R from the Biomass git
-
 # load libraries required for reformatting and merging data
 library(tidyverse)
 library(readr)
@@ -12,13 +10,44 @@ library(data.table)
 library(ggpubr)
 library(tidyr)
 
-#check all routes in the sampling data 
-# jasper had his own IDs
-# he used our ID
+### checking we have all data ####################
 
-#sampling data overlap names with covariate data
+sampling_data_cleaned <- read.delim("data/sampling_data/sampling_data_cleaned.txt", 
+                            as.is=TRUE)
+#add year info
+sampling_data_cleaned$eventDate <- as.Date(sampling_data_cleaned$eventDate,
+                                           format="%d-%m-%Y")
+sampling_data_cleaned$Year <- lubridate::year(sampling_data_cleaned$eventDate)
+
+table(sampling_data_cleaned$Year) # there is an incorrect date
+sampling_data_cleaned$Year[sampling_data_cleaned$Year==2010] <- "2019"#based on eventTime
+
+#get rid of NAs
+sampling_data_cleaned <- sampling_data_cleaned %>% filter(!is.na(Year))
+  
+#get routes samplied in each year
+routes2018 <- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2018])
+routes2018_ID_JB <- unique(sampling_data_cleaned$RouteID_JB[sampling_data_cleaned$Year==2018])#jaspers ID
+routes2019<- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2019])
+
+#read in an example land use file for 2018
+df <- read_delim("data/environmental_data/covariate-data/ruter2018buf1000_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+#check overlap
+routes2018[!routes2018_ID_JB %in% df$routeID]
+#missing route "P115.2"
+
+#read in an example land use file for 2019
+df <- read_delim("data/environmental_data/covariate-data/ruter2019buf1000_areas.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+#check overlap
+routes2019[!routes2019 %in% df$routeID]
+
+#check also against the traffic lights
+df <- read_delim("data/environmental_data/covariate-data/DK_TrafficLightsCount.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+#how to check for 2019 data
 
 #### 2018 data #####
+
+# code below from script 02_DK_environDaat_processing.R from the Biomass git
 
 ### load buffer zone files #### 
 #oeko <- read.delim("covariate-data/DK_ruter2018_OekoAreas.txt") # oeko is now part of the buffer zone data
@@ -488,4 +517,4 @@ grasslandoutputCast <- merge(grasslandoutputCast_1000, grasslandoutputCast_500, 
 grasslandoutputCast <- merge(grasslandoutputCast, grasslandoutputCast_250, by = "routeID")
 grasslandoutputCast <- merge(grasslandoutputCast, grasslandoutputCast_50, by = "routeID")
 
-write.table(grasslandoutputCast,file="cleaned-data/grassland_landuse_intensity_DK.txt",sep="\t")
+#write.table(grasslandoutputCast,file="cleaned-data/grassland_landuse_intensity_DK.txt",sep="\t")

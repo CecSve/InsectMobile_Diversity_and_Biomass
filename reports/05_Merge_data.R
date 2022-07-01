@@ -3,45 +3,24 @@
 ### read in cleaned data tables ############
 
 # sampling metadata
-sampling_data <-
-  read_delim(
-    "data/sampling_data/sampling_data_cleaned.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    trim_ws = TRUE
-  )
+sampling_data <- readRDS("data/sampling_data/sampling_data_cleaned.rds")
 
 # samples processed in the lab
-lab_data <-
-  read_delim(
-    "data/lab_data/lab_data_cleaned.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    trim_ws = TRUE
-  )
+lab_data <- readRDS("data/lab_data/lab_data_cleaned.rds")
 
-asv_table <-
-  read_delim(
-    "data/sequencing_data/asvtable.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    trim_ws = TRUE
-  )
+# sequencing data
+asv_table <- readRDS("data/sequencing_data/asvs.rds")
 
 # NB! prior to taxize edits!
-taxonomy_data <-
-  read_delim(
-    "data/sequencing_data/taxonomy_cleaned_sub.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    trim_ws = TRUE
-  )
+taxonomy_data <- readRDS("data/sequencing_data/taxonomy_cleaned.rds") # less records than the asv table but this is because the taxonomy has been filtered to only arachnids and insects!
+
+test <- sampling_data %>% filter(!is.na(Date)) # only retain samples with an associated date
 
 # get summaries of how many samples there is for each variable and their levels
-length(unique(sampling_data[["RouteID_JB"]])) # how many routes were sampled 
-length(unique(sampling_data[["PID"]])) # how many pilots that carried out the sampling
+length(unique(sampling_data[["RouteID_JB"]])) # how many routes  
+length(unique(sampling_data[["PID"]])) # how many pilots
 length(unique(sampling_data[["SampleID"]])) # how many samples
-data.frame(table(sampling_data$Wind)) # how often were the different wind categories registered 
+data.frame(table(sampling_data$Wind)) # how often were the different wind categories registered  - the empty entries is routes where we either do not have metadata or that they weren't sampled
 data.frame(table(sampling_data$Temperature)) # how many samples were collected at different temperature intervals
 data.frame(table(sampling_data$eventDate)) # how many samples per day
 

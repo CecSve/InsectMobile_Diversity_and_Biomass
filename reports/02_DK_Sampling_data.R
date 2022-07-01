@@ -9,7 +9,18 @@ names(metadata_1) # remove exmpty and unneccesary columns
 metadata_1 <- metadata_1 %>% select(SampleID, PID, DOFAtlasQuadrantID, subLandUseType, Date, StartTime, EndTime, Wind, Temperature, Notes, PilotNotes) # we will not include google map links since route information will be added later from GIS
 
 names(metadata_2)
-metadata_2 <- metadata_2 %>% select(PilotTripID, PID, DOFAtlasQuadrantID, SubLandUseType, Date, StartTime, EndTime, Wind, Temperature)
+metadata_2 <-
+  metadata_2 %>% select(
+    PilotTripID,
+    PID,
+    DOFAtlasQuadrantID,
+    SubLandUseType,
+    Date,
+    StartTime,
+    EndTime,
+    Wind,
+    Temperature
+  )
 metadata_2 <- metadata_2 %>% rename(SampleID = PilotTripID)
 metadata_2 <- metadata_2 %>% rename(subLandUseType = SubLandUseType)
 
@@ -18,7 +29,7 @@ metadata <- merge(metadata_1, metadata_2, all = TRUE)
 
 # add routeid and sampleid link for both years
 routesample2018 <- read_delim("data/sampling_data/pilotTripIdToRouteID2018.txt", 
-                          delim = ";", escape_double = FALSE, 
+                          delim = "\t", escape_double = FALSE, 
                           trim_ws = TRUE)
 
 routesample2019 <- read_delim("data/sampling_data/pilotTripIdToRouteID2019.txt", 
@@ -27,13 +38,22 @@ routesample2019 <- read_delim("data/sampling_data/pilotTripIdToRouteID2019.txt",
 
 names(routesample2019)
 
-routesample2019 <- routesample2019 %>% rename(RouteID_JB = `Rute_adresse-ID`) %>% select(RouteID_JB, PIDRouteID)
+routesample2019 <-
+  routesample2019 %>% rename(RouteID_JB = `Rute_adresse-ID`) %>% select(RouteID_JB, PIDRouteID)
 
 # add a PIDRouteID to metadata
-metadata <- merge(metadata, routesample2018, by.x = "SampleID", by.y = "PilotTripID", all.x = T)
+metadata <-
+  merge(
+    metadata,
+    routesample2018,
+    by.x = "SampleID",
+    by.y = "PilotTripID",
+    all.x = T
+  )
 
-metadata$PIDRouteID <- metadata$SampleID 
-metadata <- metadata %>% mutate(PIDRouteID = gsub("A", "", PIDRouteID)) %>% mutate(PIDRouteID = gsub("B", "", PIDRouteID))
+metadata$PIDRouteID <- metadata$SampleID
+metadata <-
+  metadata %>% mutate(PIDRouteID = gsub("A", "", PIDRouteID)) %>% mutate(PIDRouteID = gsub("B", "", PIDRouteID))
 
 metadata <- merge(metadata, routesample2019, by = c("PIDRouteID"), all.x = T)
 
@@ -109,30 +129,42 @@ test2 <- left_join(test, coord_2, by = c("PIDRouteID" = "routeID"))
 
 # bit of a mess because of different routeIDs used between the years so we need to merge the columns 
 metadata_coords <-
-  test2 %>% mutate(utm_x = coalesce(utm_x.x, utm_x.y)) %>% mutate(utm_y = coalesce(utm_y.x, utm_y.y)) %>% mutate(decimalLongitude = coalesce(decimalLongitude.x, decimalLongitude.y)) %>% mutate(decimalLatitude = coalesce(decimalLatitude.x, decimalLatitude.y)) 
+  test2 %>% mutate(utm_x = coalesce(utm_x.x, utm_x.y)) %>% mutate(utm_y = coalesce(utm_y.x, utm_y.y)) %>% mutate(decimalLongitude = coalesce(decimalLongitude.x, decimalLongitude.y)) %>% mutate(decimalLatitude = coalesce(decimalLatitude.x, decimalLatitude.y))
 
 str(metadata_coords)
 
 # only select the combined and correct columns
-metadata <- metadata_coords %>% select(-utm_x.x, -utm_y.x, -utm_x.y, -utm_y.y, -decimalLongitude.x, -decimalLatitude.x, -decimalLongitude.y, -decimalLatitude.y)
+metadata <-
+  metadata_coords %>% select(
+    -utm_x.x,
+    -utm_y.x,
+    -utm_x.y,
+    -utm_y.y,
+    -decimalLongitude.x,
+    -decimalLatitude.x,
+    -decimalLongitude.y,
+    -decimalLatitude.y
+  )
 
 ### time & date formatting ########################## NOT DONE! still also need to merge it all in the end and make sure no data is missing
 test <- metadata
 test <- test %>% separate(Date, c("day", "month", "year"))
 test <- test %>%
-  mutate(year=replace(year, year=="2010", "2019")) # correct typo
+  mutate(year = replace(year, year == "2010", "2019")) # correct typo
 test <- test %>% separate(StartTime, c("hour", "minute", "second"))
 test <- test %>% separate(EndTime, c("hour2", "minute2", "second2"))
 
 str(test)
 names(test)
-test[, c(6:14)] <- test[, c(6:14)] %>% mutate_if(is.character,as.integer) # change values into integers instead of characters
+test[, c(6:14)] <-
+  test[, c(6:14)] %>% mutate_if(is.character, as.integer) # change values into integers instead of characters
 str(test)
 
 Sys.timezone(location = TRUE)
 
-eventStart <- test %>% 
-  select(year, month, day, hour, minute) %>% 
+
+eventStart <- test %>%
+  select(year, month, day, hour, minute) %>%
   mutate(eventStart = make_datetime(year, month, day, hour, minute, tz = "Europe/Paris")) %>% select(eventStart)
 
 eventEnd <- test %>% 
@@ -143,8 +175,9 @@ test <- cbind(test, eventStart, eventEnd)
 str(test)
 
 # create eventTime interval
-metadata$eventTime <- paste(test$eventStart, test$eventEnd, sep="/")
-metadata <- metadata %>% rename(eventDate = Date)
+metadata$eventTime <- paste(test$eventStart, test$eventEnd, sep = "/")
+metadata$Date <-
+  as.Date(with(test, paste(year, month, day, sep = "-")), "%Y-%m-%d")
 
 # make a column for whether sampling was midday or evening
 time <- as.POSIXct(strptime(metadata$StartTime, "%H:%M"), "UTC")
@@ -172,7 +205,6 @@ metadata <- metadata %>% mutate(Temperature=recode(Temperature,
                                             "20-25" = "20-24"))
 
 #format Date
-metadata$Date <- as.Date(metadata$eventDate, "%d-%m-%Y")
 str(metadata)
 metadata$yDay <- yday(metadata$Date)
 
@@ -197,4 +229,4 @@ str(metadata)
 metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
 
 #write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)
-saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")
+#saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")

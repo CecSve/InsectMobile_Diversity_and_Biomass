@@ -15,6 +15,8 @@ library(taxize)
 
 ### fwh primer ##########################
 
+#### first sequence run ####
+
 # NB!!! Library 44 fails no matter how the analysis is carried out, but data from 40, 42 and 46 is included because we combine the different DADA2 runs (the three libraries also fail in some combinations of library processing with DADA2 and it is not due to tag overlap). Also be aware that the data is from Novaseq6000 and HiSeq4000, and quality thresholds are very different for Novaseq data (4 instead of 20+ fopr HiSeq) which is not handled well by the default parameters in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that we may fail to detect the rare sequences/taxa with the NovaSeq data. 
 
 # sequence data for the first sequenced libraries 1, 4, 7 (German samples - MISSING!), 10, 13, 16, 19, 22, 25, 28 (contains German samples), 31 (German samples), 34, 36, 38, 40, 42 (contains German samples), (44 - fails in the DADA2 pipeline so not included), 46  

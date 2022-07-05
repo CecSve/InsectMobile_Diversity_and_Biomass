@@ -59,6 +59,9 @@ asvs_combined <- test2 %>% filter(!is.na(SampleID))
 totsample_asvs <- asvs_combined %>% column_to_rownames(var = "SampleID")
 totsample_asvs <- as.data.frame(t(totsample_asvs))
 
+# save output
+saveRDS(totsample_asvs, file = "data/sequencing_data/asvtable_total_samples.rds")
+
 #### check-ups ####
 # get summaries of how many samples there is for each variable and their levels
 test <- anti_join(sampling_data, lab_data, by = "SampleID") # sampling data but not lab data, not sampled entries and pilots that did not sample after the instructions 

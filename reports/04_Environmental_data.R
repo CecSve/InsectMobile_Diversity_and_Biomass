@@ -46,11 +46,11 @@ df <- read_delim("data/environmental_data/covariate-data/ruter2019_countStops.tx
 routes2019[!routes2019 %in% df$PIDRouteID]
 # many are missing but I guess these are zero stops??
 
-#### 2018 data #####
+### 2018 data #####
 
 # code below from script 02_DK_environDaat_processing.R from the Biomass git
 
-### load buffer zone files #### 
+#### load buffer zone files #### 
 #oeko <- read.delim("covariate-data/DK_ruter2018_OekoAreas.txt") # oeko is now part of the buffer zone data
 hedge <- read.delim("data/environmental_data/covariate-data/DK_ruter2018_hegnAreas.txt")
 
@@ -187,3 +187,5 @@ outputCast <- merge(outputCast, hedgecast, by = "routeID")
 outputCast <- merge(outputCast, urbangreencast, by = "routeID")
 
 write.table(outputCast,file="environData_2018_DK.txt",sep="\t")
+
+### 2019 data ####

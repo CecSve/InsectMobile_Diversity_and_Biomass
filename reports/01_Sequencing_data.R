@@ -11,8 +11,11 @@ library(sp)
 library(lubridate)
 library(data.table)
 library(rgbif)
+library(taxize)
 
 ### fwh primer ##########################
+
+#### first sequence run ####
 
 # NB!!! Library 44 fails no matter how the analysis is carried out, but data from 40, 42 and 46 is included because we combine the different DADA2 runs (the three libraries also fail in some combinations of library processing with DADA2 and it is not due to tag overlap). Also be aware that the data is from Novaseq6000 and HiSeq4000, and quality thresholds are very different for Novaseq data (4 instead of 20+ fopr HiSeq) which is not handled well by the default parameters in DADA2, which we used (https://github.com/benjjneb/dada2/issues/791). The consequence appears to be that we may fail to detect the rare sequences/taxa with the NovaSeq data. 
 
@@ -40,7 +43,7 @@ check_de <- asvs_1 %>% dplyr:: select(starts_with("S"))
 names(check_de) # 237 samples out of 252 present (some negatives in there but most are discarded)
 
 # remove the German samples from the asv table since we will not include them in the analysis
-asvs_1 <- asvs_1 %>% dplyr:: select(!starts_with("S"))
+#asvs_1 <- asvs_1 %>% dplyr:: select(!starts_with("S"))
 
 ##### taxonomy data #####
 # Data have been matched against a 99% clustered version of the BOLD Public Database v2022-02-22 public data (COI-5P sequences) All returned matches have then been matched against the GBIF backbone taxonomy by their identifier (e.g. BOLD:ADJ8357). These OTU identifiers can be used for publishing sequence based data to GBIF. The result can be downloaded as a csv with identifiers included.
@@ -69,6 +72,7 @@ taxa_1 <- taxonomy_1 # keep an output where taxstrings are not split up
 taxonomy_1 <- taxonomy_1 %>% separate(classification, c("kingdom", "phylum", "class", "order", "family", "genus", "species"), "_") #split the taxonomy string into ranks using the dplyr and tidyr package - there are a lot of warnings, but this is because NAs are put in where there taxonomy is not complete
 
 #### second sequence run ####
+# fwh libraries: 58 (DE samples 1-94), 59 (DE samples 95-188), 60 (+ DE samples 189-215), 62, 64, 65, 66, 67, 68, 69, 7, 71, 72, 73
 lulufied_2 <- readRDS("data/sequencing_data/secondrun/lulified_nochim_secondrun.RDS")
 otutable_2 <- lulufied_2[["curated_table"]] # extract the otutable
 names(otutable_2)
@@ -88,12 +92,10 @@ max(colSums(asvs_2)) # 770966
 # rename the German samples so the year is included
 names(asvs_2) <- asvs_2 %>% names() %>% str_replace("[S]", "S19")
 check_de <- asvs_2 %>% dplyr:: select(starts_with("S"))
-names(check_de)
+names(check_de) # 206 samples with some blanks and negatives
 
-# NB!!! the main issue now is that both 2019 and 2019 German samples MAYBE were sequenced in the second run - so the sample names probably need to be renamed in another way (based on sampling names or another logical way) instead of the solution above - otherwise it will be impossible to link the sequences to the correct samples 
-
-# we will remove German samples from the analysis due to the issues mentioned above
-asvs_2 <- asvs_2 %>% dplyr:: select(!starts_with("S"))
+# option to remove German samples
+#asvs_2 <- asvs_2 %>% dplyr:: select(!starts_with("S"))
 
 ##### taxonomy #####
 taxonomy_1_1 <- read.delim("data/sequencing_data/secondrun/GBIF_seq_id_tool_nonBackbone/blastresult(31).csv", sep = ",") #   5,000 sequences, 99.9% with blast match, 85% with identity > 99%, 93% with identity >95%
@@ -133,7 +135,9 @@ median(colSums(asvs))
 max(colSums(asvs))
 
 #### merge the taxonomy ####
-taxonomy <- merge(taxonomy_1, taxonomy_2, all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs
+taxonomy <- merge(taxonomy_1, taxonomy_2, all = TRUE) # combine the two asvtables and keep all the samples while merging identical asv IDs 
+
+# notice that taxonomy obs. and asvs obs. match in number of obs.
 
 ### name parsing ####
 # since we use the BOLD checklist for assigning names, we get a lot of names that are not true Linnean names, e.g. OTU names and sp. placeholders. They need to be identified and the taxonomy should be reassigned to the most correct name
@@ -141,20 +145,32 @@ taxonomy <- merge(taxonomy_1, taxonomy_2, all = TRUE) # combine the two asvtable
 # remove non-Linnean names (INFORMAL (a scientific name with some informal addition like "cf." or indetermined like Abies spec.) and OTU names) from genus rank names
 genus_parsed <- taxonomy %>%
   mutate(parsed = rgbif::parsenames(genus)) %>%
-  tidyr::unnest(cols = "parsed") %>% mutate_at(vars(genus), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(genus), ~ replace(., type == "OTU", NA))
+  tidyr::unnest(cols = "parsed") %>% mutate_at(vars(genus), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(genus), ~ replace(., type == "OTU", NA)) %>% mutate_at(vars(genus), ~ replace(., type == "NO_NAME", NA))
+
+# for some reason the Janzen and Malaise names make it through the parser, although I don't know why - they need to be removed before we continue
+
+genus_parsed <- genus_parsed %>%
+  mutate(across(c(species),
+                ~ replace(.,   str_detect(., "Janzen|Malaise"), NA)))
+
+# the Janzens in the scientificName will be removed in the next step
 
 # remove the parse columns so we can parse species after genus is parsed
 genus_noparse <- genus_parsed[, c(1:15)]
 
 genus_species_parsed <-
-  genus_noparse %>% mutate(parsed = rgbif::parsenames(species)) %>% tidyr::unnest(cols = "parsed") %>% mutate_at(vars(species), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(species), ~ replace(., type == "OTU", NA))
+  genus_noparse %>% mutate(parsed = rgbif::parsenames(species)) %>% tidyr::unnest(cols = "parsed") %>% mutate_at(vars(species), ~ replace(., type == "INFORMAL", NA)) %>% mutate_at(vars(species), ~ replace(., type == "OTU", NA)) %>% mutate_at(vars(genus), ~ replace(., type == "NO_NAME", NA))
 
 # summarize the difference
-table(is.na(taxonomy$species)) # 12244 species with no name
-table(is.na(genus_species_parsed$species)) # 13067 species with no name
-13067-12244 # 843 asvs were assigned with project-related names out of 17485 asvs
+table(is.na(taxonomy$species)) # this many species had no name before cleaning
+table(is.na(genus_species_parsed$species)) # this many species do not have a name after cleaning
 
-# NB! I noticed wild boar in the sequences - remember to remove non-arthropods prior to analysis AND any weird class-level IDs as well, e.g. sea spiders (!?)
+#### remove unwanted IDs ####
+# NB! I noticed wild boar in the sequences - remove everything but spiders and insects
+
+unique(genus_species_parsed$class)
+genus_species_parsed <-
+  genus_species_parsed[genus_species_parsed$class %in% c('Arachnida', 'Insecta'),] # 22990 records
 
 ### minor edits to taxonomy ####
 
@@ -162,7 +178,8 @@ table(is.na(genus_species_parsed$species)) # 13067 species with no name
 
 # first assign the highest taxon rank
 names(genus_species_parsed)
-genus_species_parsed$taxonRank <- names(genus_species_parsed[, c(8:14)])[max.col(!is.na(genus_species_parsed[, c(8:14)]), "last")]
+genus_species_parsed$taxonRank <-
+  names(genus_species_parsed[, c(8:14)])[max.col(!is.na(genus_species_parsed[, c(8:14)]), "last")]
 
 # add intraspecificEpithet  - not the most optimal solution perhaps, but it works
 test <- genus_species_parsed[, c(8:14)]
@@ -178,16 +195,11 @@ genus_species_parsed <- genus_species_parsed %>% select(!infraspecificepithet)
 
 taxonomy_cleaned <- cbind(genus_species_parsed, epithet) # how to deal with the 'no match' sequences? Should Biota be added as the domain (taxonRank = kingdom)? This is the hacky solution that is possible in GBIF right now
 
-#### remove unwanted IDs ####
-unique(taxonomy_cleaned$class)
-
-taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnida', 'Insecta'), ] # 22990 records
-
 # current output
-# write.table(taxonomy_cleaned_sub, file= "data/sequencing_data/taxonomy_cleaned_sub.txt", sep="\t", col.names = T, row.names = F)
+#write.table(taxonomy_cleaned, file= "data/sequencing_data/taxonomy_cleaned.txt", sep="\t", col.names = T, row.names = F)
 
 # save output
-#saveRDS(taxonomy_cleaned_sub, file = "data/sequencing_data/taxonomy_cleaned_sub.rds")
+#saveRDS(taxonomy_cleaned, file = "data/sequencing_data/taxonomy_cleaned.rds")
 #saveRDS(asvs, file = "data/sequencing_data/asvs.rds")
 #write.table(asvs, file = "data/sequencing_data/asvtable.txt", col.names = NA, sep = "\t")
 #write.table(taxonomy, file = "data/sequencing_data/taxonomy.txt", col.names = T, row.names = F, sep = "\t")
@@ -197,10 +209,8 @@ taxonomy_cleaned_sub <- taxonomy_cleaned[taxonomy_cleaned$class %in% c('Arachnid
 # THERE MAY BE A MANUEL CHECK INCLUDED FOR THE NAMES THAT DO NOT MATCH 
 # we will use taxize for this, Diana will carry out the check
 
-library(taxize)
-
 #get all species names
-allSpecies <- taxonomy_cleaned_sub %>%
+allSpecies <- taxonomy_cleaned %>%
   filter(!is.na(species)) %>%
   pull(species) %>%
   unique() 
@@ -212,10 +222,9 @@ checkSpecies <- allSpecies %>% map_dfr(gbif_parse) %>%
 mean(checkSpecies$parsed==TRUE) # proportion that pass
 
 #which ones don't parse
-missingSpecies <- checkSpecies %>%
-                    filter(parsed==FALSE)
+#missingSpecies <- checkSpecies %>% filter(parsed==FALSE)
 
-bold_search(missingSpecies$scientificname) # this should be fixed in the section above
+#bold_search(missingSpecies$scientificname) # this should be fixed in the section above
 
 #rgbif - check names against catalogue of life
 
@@ -230,5 +239,8 @@ table(checkSpecies$status)
 
 synonym <- checkSpecies %>%
             filter(status!="ACCEPTED")
+
+# save the synonyms so we can check if needed
+#write.table(synonym, file= "data/sequencing_data/synonyms.txt", sep="\t", col.names = T, row.names = F)
 
 #the species column contains the accepted names for these species

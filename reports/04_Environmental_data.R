@@ -19,10 +19,14 @@ table(sampling_data_cleaned$Year) # contains data for both 2018 and 2019
 
 #get rid of NAs - empty rows
 sampling_data_cleaned <- sampling_data_cleaned %>% filter(!is.na(Year))
+
+# correct year 2010 if in there
+sampling_data_cleaned <- sampling_data_cleaned %>%
+  mutate(Year = replace(Year, Year == "2010", "2019")) # correct typo
   
 #get routes sampled in each year
 routes2018 <- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2018])
-routes2018_ID_JB <- unique(sampling_data_cleaned$RouteID_JB[sampling_data_cleaned$Year==2018])#jaspers ID
+routes2018_ID_JB <- unique(sampling_data_cleaned$RouteID_JB[sampling_data_cleaned$Year==2018])# Jespers ID
 routes2019 <- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2019])
 routes2019_ID_JB <- unique(sampling_data_cleaned$RouteID_JB[sampling_data_cleaned$Year==2019])
 

@@ -12,17 +12,12 @@ library(tidyr)
 
 ### checking we have all data ####################
 
-sampling_data_cleaned <- read.delim("data/sampling_data/sampling_data_cleaned.txt", 
-                            as.is=TRUE)
+sampling_data_cleaned <- readRDS("data/sampling_data/sampling_data_cleaned.rds")
 sampling_data_cleaned$Year <- lubridate::year(sampling_data_cleaned$Date)
 table(sampling_data_cleaned$Year) # contains data for both 2018 and 2019
 
 #get rid of NAs - empty rows
 sampling_data_cleaned <- sampling_data_cleaned %>% filter(!is.na(Year))
-
-# correct year 2010 if in there
-sampling_data_cleaned <- sampling_data_cleaned %>%
-  mutate(Year = replace(Year, Year == "2010", "2019")) # correct typo
   
 #get routes sampled in each year
 routes2018 <- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2018])
@@ -36,6 +31,9 @@ df <- read_delim("data/environmental_data/covariate-data/ruter2018buf1000_areas.
 #check overlap
 routes2018[!routes2018_ID_JB %in% df$routeID]
 #missing route "P115.2" (previous sampling data version) "P63.2" (current version)
+
+setdiff(df$routeID, sampling_data_cleaned$RouteID_JB) # in environmental data but not in the sampling data
+# setdiff(sampling_data_cleaned$RouteID_JB, df$routeID) # in sampling data but not in the environmental data - routes from 2019, not included yet
 
 #read in an example land use file for 2019
 df <- read_delim("data/environmental_data/covariate-data/ruter2019buf1000_areas.txt",

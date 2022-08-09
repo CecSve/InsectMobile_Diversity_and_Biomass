@@ -1,5 +1,10 @@
 # Standardising sampling data
 
+
+# load libraries required for reformatting and merging data
+library(sp)
+library(lubridate)
+
 ### sampling data ####
 metadata_1 <- read.delim("data/sampling_data/SamplingEvent.txt")
 metadata_2 <- read.delim("data/sampling_data/SampleReg_20042020.txt") # update sheet with PilotNotes!
@@ -162,7 +167,6 @@ str(test)
 
 Sys.timezone(location = TRUE)
 
-
 eventStart <- test %>%
   select(year, month, day, hour, minute) %>%
   mutate(eventStart = make_datetime(year, month, day, hour, minute, tz = "Europe/Paris")) %>% select(eventStart)
@@ -229,4 +233,4 @@ str(metadata)
 metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
 
 #write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)
-#saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")
+saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")

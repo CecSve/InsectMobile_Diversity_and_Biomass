@@ -1,5 +1,10 @@
 # Standardising sampling data
 
+
+# load libraries required for reformatting and merging data
+library(sp)
+library(lubridate)
+
 ### sampling data ####
 metadata_1 <- read.delim("data/sampling_data/SamplingEvent.txt")
 metadata_2 <- read.delim("data/sampling_data/SampleReg_20042020.txt") # update sheet with PilotNotes!
@@ -29,8 +34,8 @@ metadata <- merge(metadata_1, metadata_2, all = TRUE)
 
 # add routeid and sampleid link for both years
 routesample2018 <- read_delim("data/sampling_data/pilotTripIdToRouteID2018.txt", 
-                          delim = "\t", escape_double = FALSE, 
-                          trim_ws = TRUE)
+                              delim = "\t", escape_double = FALSE, 
+                              trim_ws = TRUE)
 
 routesample2019 <- read_delim("data/sampling_data/pilotTripIdToRouteID2019.txt", 
                               delim = "\t", escape_double = FALSE, 
@@ -162,7 +167,6 @@ str(test)
 
 Sys.timezone(location = TRUE)
 
-
 eventStart <- test %>%
   select(year, month, day, hour, minute) %>%
   mutate(eventStart = make_datetime(year, month, day, hour, minute, tz = "Europe/Paris")) %>% select(eventStart)
@@ -194,15 +198,15 @@ metadata$Distance_driven <- '10000'
 
 # standardise wind
 metadata <- metadata %>% mutate(Wind=recode(Wind, 
-                                    "Gentle breeze 3.4-5.5" = "gentle breeze 3.4-5.5",
-                                    "Light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
-                                    "light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
-                                    "Moderate breeze 5.5-7.9" = "moderate breeze 5.5-7.9"))
+                                            "Gentle breeze 3.4-5.5" = "gentle breeze 3.4-5.5",
+                                            "Light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
+                                            "light Breeze 1.6-3.3" = "light breeze 1.6-3.3",
+                                            "Moderate breeze 5.5-7.9" = "moderate breeze 5.5-7.9"))
 
 # standardise temperature
 metadata <- metadata %>% mutate(Temperature=recode(Temperature, 
-                                            "15-20" = "15-19",
-                                            "20-25" = "20-24"))
+                                                   "15-20" = "15-19",
+                                                   "20-25" = "20-24"))
 
 #format Date
 str(metadata)
@@ -229,4 +233,4 @@ str(metadata)
 metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
 
 #write.table(metadata, file="data/sampling_data/sampling_data_cleaned.txt", sep="\t", row.names=F)
-#saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")
+saveRDS(metadata, file = "data/sampling_data/sampling_data_cleaned.rds")

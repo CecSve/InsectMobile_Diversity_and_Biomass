@@ -372,6 +372,32 @@ table(environData$routeID)
 
 #### shannon diversity #####
 
-environData
+library(vegan)
+
+routeDiversity <- environData %>%
+                    select(routeID,
+                           starts_with("Forest"),
+                           starts_with("Heathland"),
+                           starts_with("Open.uncultivated"),
+                           starts_with("Agriculture"),
+                           starts_with("Urban"),
+                           starts_with("Wetland")) %>%
+                    pivot_longer(contains("_"),
+                                 names_to = "land_use",
+                                 values_to = "prop") %>%
+                    separate(land_use, c("land_use", "buffer"), sep="_") %>%
+                    group_by(routeID, buffer) %>%
+                    summarise(diversity = diversity(prop)) %>%
+                    ungroup() %>%
+                    pivot_wider(everything(),
+                                names_from = "buffer",
+                                values_from = "diversity",
+                                names_prefix = "Diversity_")
+  
+#add onto main file
+environData <- left_join(environData, routeDiversity,
+                         by = "routeID")
+                    
+            
 
                   

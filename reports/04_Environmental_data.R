@@ -48,6 +48,14 @@ df <- read_delim("data/environmental_data/covariate-data/ruter2019_countStops.tx
 routes2019[!routes2019 %in% df$PIDRouteID]
 # many are missing but I guess these are zero stops??
 
+### make file to relate JB route ID to standard route ID
+
+sampling_data_cleaned <- readRDS("data/sampling_data/sampling_data_cleaned.rds")
+
+idRelate <- sampling_data_cleaned %>%
+              select(PIDRouteID, RouteID_JB) %>%
+              unique()
+
 ### 2018 data #####
 
 # code below from script 02_DK_environDaat_processing.R from the Biomass git
@@ -336,16 +344,34 @@ write.table(outputCast,file="data/environmental_data/covariate-data/environData_
 
 ### combine all #########################################
 
-environData2018 <-read.delim("data/environmental_data/covariate-data/environData_2018_DK.txt")  
-environData2019 <-read.delim("data/environmental_data/covariate-data/environData_2019_DK.txt")
+#get data for each year
+environData2018 <-read.delim("data/environmental_data/covariate-data/environData_2018_DK.txt")%>%
+                      add_column(Year = 2018)
+
+environData2019 <-read.delim("data/environmental_data/covariate-data/environData_2019_DK.txt")%>%
+                      add_column(Year = 2019)
 
 #check all present - the following should be empty characters
+#CS should check
 names(environData2018)[!names(environData2018) %in% names(environData2019)]
 names(environData2019)[!names(environData2019) %in% names(environData2018)]
 
-#route IDs are different!!!! :(
+#route IDs are different!!!!
+#fix using the idRelate table made above
+environData2018$routeID <- idRelate$PIDRouteID[match(environData2018$routeID,
+                                                     idRelate$RouteID_JB)]
 
-#combine all together and get unique values per route
+#combine all together and get unique values per route 
 environData <- bind_rows(environData2018, environData2019) %>%
-  unique()
+                  unique()
+
+#should there be 2 values - one for each year??????
+table(environData$routeID)
+
+### heterogeneity calculation #########################################
+
+#### shannon diversity #####
+
+environData
+
                   

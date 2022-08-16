@@ -421,6 +421,6 @@ routeDiversity <- environData %>%
 environData <- left_join(environData, routeDiversity,
                          by = "routeID")
                     
-write.table(environData,file="data/environmental_data/covariate-data/DK_environData.txt",sep="\t")            
+write.table(environData,file="data/environmental_data/covariate-data/DK_environData.txt", sep="\t", col.names = T, row.names = F)            
 
                   

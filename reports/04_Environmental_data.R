@@ -3,12 +3,13 @@
 # preparing DK landuse data prepared by JB in GIS. README file in H:\Documents\Insektmobilen\Data\Arealanvendelse_Århus\2018_bufferzones_data\Final_buffers_2018 (Cecilie Svenningsens work drive). README should be included in final git submission. 
 
 # load libraries required for reformatting and merging data
-library(tidyverse)
-library(readr)
-library(stringr)
-library(data.table)
-library(ggpubr)
-library(tidyr)
+library(tidyverse) # data wrangling
+library(readr) # import data
+library(stringr) # character string/text/natural language processing tools for pattern searching
+library(data.table) # aggregation of large data
+library(ggpubr) # vizualisation
+library(tidyr) # data wrangling
+library(vegan) # for calculating heterogeneity
 
 ### checking we have all data ####################
 
@@ -18,6 +19,8 @@ table(sampling_data_cleaned$Year) # contains data for both 2018 and 2019
 
 #get rid of NAs - empty rows
 sampling_data_cleaned <- sampling_data_cleaned %>% filter(!is.na(Year))
+1582-1358 # removes 224 samples without metadata information
+(1358/1582)*100 # 85% have samling metadata for further analysis
 
 #get routes sampled in each year
 routes2018 <- unique(sampling_data_cleaned$PIDRouteID[sampling_data_cleaned$Year==2018])
@@ -29,10 +32,10 @@ routes2019_ID_JB <- unique(sampling_data_cleaned$RouteID_JB[sampling_data_cleane
 df <- read_delim("data/environmental_data/covariate-data/ruter2018buf1000_areas.txt",
                  "\t", escape_double = FALSE, trim_ws = TRUE)
 #check overlap
-routes2018[!routes2018_ID_JB %in% df$routeID]
-#missing route "P115.2" (previous sampling data version) "P63.2" (current version)
+routes2018[!routes2018_ID_JB %in% df$routeID] # no missing routes between data tables
 
 setdiff(df$routeID, sampling_data_cleaned$RouteID_JB) # in environmental data but not in the sampling data
+
 # setdiff(sampling_data_cleaned$RouteID_JB, df$routeID) # in sampling data but not in the environmental data - routes from 2019, not included yet
 
 #read in an example land use file for 2019
@@ -46,11 +49,12 @@ df <- read_delim("data/environmental_data/covariate-data/DK_TrafficLightsCount.t
 routes2018[!routes2018_ID_JB %in% df$routeID]
 df <- read_delim("data/environmental_data/covariate-data/ruter2019_countStops.txt","\t", escape_double = FALSE, trim_ws = TRUE)
 routes2019[!routes2019 %in% df$PIDRouteID]
-# many are missing but I guess these are zero stops??
+
+# many are missing but I guess these are zero stops?? - YES
 
 ### make file to relate JB route ID to standard route ID
 
-sampling_data_cleaned <- readRDS("data/sampling_data/sampling_data_cleaned.rds")
+sampling_data_cleaned <- readRDS("data/sampling_data/sampling_data_cleaned.rds") # this includes the samples that are not sampled
 
 idRelate <- sampling_data_cleaned %>%
               select(PIDRouteID, RouteID_JB) %>%
@@ -158,10 +162,10 @@ buf_500m$propLand_use[buf_500m$type %in% c("Hede", "Hede_organic")] <- "Heathlan
 buf_1000m$propLand_use[buf_1000m$type %in% c("Hede", "Hede_organic")] <- "Heathland"
 
 #unspecified category
-buf_50m$propLand_use[buf_50m$type %in% "Andet"] <- "Unspecified land cover"
-buf_250m$propLand_use[buf_250m$type %in% "Andet"] <- "Unspecified land cover"
-buf_500m$propLand_use[buf_500m$type %in% "Andet"] <- "Unspecified land cover"
-buf_1000m$propLand_use[buf_1000m$type %in% "Andet"] <- "Unspecified land cover"
+buf_50m$propLand_use[buf_50m$type %in% "andet"] <- "Unspecified land cover"
+buf_250m$propLand_use[buf_250m$type %in% "andet"] <- "Unspecified land cover"
+buf_500m$propLand_use[buf_500m$type %in% "andet"] <- "Unspecified land cover"
+buf_1000m$propLand_use[buf_1000m$type %in% "andet"] <- "Unspecified land cover"
 
 #subset to the above land-uses for each buffer
 # 50
@@ -209,7 +213,7 @@ write.table(outputCast,file="data/environmental_data/covariate-data/environData_
 
 ### 2019 data ####
 
-# code below from script 02_DK_environDaat_processing.R from the Biomass git
+# code below from script 02_DK_environData_processing.R from the Biomass git
 
 #### load buffer zone files #### 
 
@@ -252,7 +256,7 @@ buf_250m$bufferDist <- 250
 buf_500m$bufferDist <- 500
 buf_1000m$bufferDist <- 1000
 
-#add on land_use data (following 02_DE script to create DK_environData)
+#add on land_use data
 buf_50m$propLand_use <- NA
 buf_250m$propLand_use <- NA
 buf_500m$propLand_use <- NA
@@ -338,7 +342,13 @@ outputCast <- merge(outputCast, hedgecast, by = "routeID")
 outputCast <- merge(outputCast, urbangreencast, by = "routeID")
 
 #add on traffic light information
-# DB unclear which file is right
+trafficDF <- read_delim("data/environmental_data/covariate-data/ruter2019_countStops.txt","\t", escape_double = FALSE, trim_ws = TRUE)
+outputCast$Num_trafficLights <- trafficDF$COUNT_STOPS[match(outputCast$routeID,
+                                                                  trafficDF$PIDRouteID)]
+#missing values are zeros
+outputCast$Num_trafficLights[is.na(outputCast$Num_trafficLights)] <- 0
+#check associated with urban cover
+qplot(Urban_250, Num_trafficLights, data=outputCast)
 
 write.table(outputCast,file="data/environmental_data/covariate-data/environData_2019_DK.txt",sep="\t")
 
@@ -353,26 +363,39 @@ environData2019 <-read.delim("data/environmental_data/covariate-data/environData
 
 #check all present - the following should be empty characters
 #CS should check
-names(environData2018)[!names(environData2018) %in% names(environData2019)]
-names(environData2019)[!names(environData2019) %in% names(environData2018)]
+names(environData2018)[!names(environData2018) %in% names(environData2019)] # empty
+names(environData2019)[!names(environData2019) %in% names(environData2018)] # empty
 
 #route IDs are different!!!!
-#fix using the idRelate table made above
-environData2018$routeID <- idRelate$PIDRouteID[match(environData2018$routeID,
-                                                     idRelate$RouteID_JB)]
+
+# add routeid and sampleid link for both years
+routesample2018 <- read_delim("data/sampling_data/pilotTripIdToRouteID2018.txt", 
+                              delim = "\t", escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+routesample2019 <- read_delim("data/sampling_data/pilotTripIdToRouteID2019.txt", 
+                              delim = "\t", escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+names(routesample2019)
+
+# merge data to have all ID columns in the same table
+routedata2019 <- merge(environData2019, routesample2019, by.x = "routeID", by.y = "PIDRouteID")
+
+# keep only the true route ID column
+environData2019 <-
+  routedata2019 %>% rename(RouteID_JB = `Rute_adresse-ID`) %>% select(-routeID,-RouteID,-kvnr,-`Adresse_adresse-ID`,-PID) %>% select(RouteID_JB, everything()) %>% rename(routeID = RouteID_JB)
 
 #combine all together and get unique values per route 
 environData <- bind_rows(environData2018, environData2019) %>%
                   unique()
 
-#should there be 2 values - one for each year??????
+# in some cases there are two route IDs because the land cover has changed between years. Be mindful of this when merging with sampling data
 table(environData$routeID)
 
 ### heterogeneity calculation #########################################
 
 #### shannon diversity #####
-
-library(vegan)
 
 routeDiversity <- environData %>%
                     select(routeID,
@@ -398,6 +421,6 @@ routeDiversity <- environData %>%
 environData <- left_join(environData, routeDiversity,
                          by = "routeID")
                     
-            
+write.table(environData,file="data/environmental_data/covariate-data/DK_environData.txt",sep="\t")            
 
                   

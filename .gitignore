@@ -45,7 +45,7 @@ data/
 raw-data/
 
 # cleaned-data
-cleaned-data/
+cleaned_data/
 
 # plots
 .Rproj.user

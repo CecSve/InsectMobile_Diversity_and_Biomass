@@ -1,5 +1,9 @@
 # Merge data tables prior to analysis - this script should generate the final table(s) for analysis and the output to be shared in a data sharing repository (journal specific)
 
+library(tidyverse) # data wrangling
+library(readr) # import data
+library(lubridate) # working with dates
+
 ### read in cleaned data tables ############
 
 # sampling metadata
@@ -47,6 +51,12 @@ examine <- setdiff(sampling_lab_data, sampling_lab_data_filter) # now only dupli
 
 keep <- sampling_lab_data_filter %>% dplyr::select(PCRID, SampleID) # we need to use the filter to avoid duplicate PCRIDs
 
+# create a column for total biomass and mean DNA concentration
+# first we need numeric concentrations
+sampling_lab_data_filter$concentration = as.numeric(as.character(sampling_lab_data_filter$concentration))
+
+sampling_lab_data_filter <- sampling_lab_data_filter %>% group_by(SampleID) %>% mutate(totalBiomass_mg = sum(DryMass_mg), meanDNAconc = mean(concentration, na.rm = TRUE)) %>% ungroup()
+
 # prepare the asv table by making a column with PCRIDs
 t.asvs <- t(asv_table)
 t.asvs <- as.data.frame(t.asvs) %>% rownames_to_column(var = "PCRID") 
@@ -55,6 +65,7 @@ test[, 3:26344][is.na(test[, 3:26344])] <- 0 # replace introduced NAs with zero
 
 # summarize the reads per total sample instead of by size fraction
 test2 <- test %>% select(-PCRID) %>% group_by(SampleID) %>% summarise_all(list(sum))
+
 # see if any sample IDs are missing - when we carry it out on test instead we see it is samples from 2017 and bird feces samples and they should be excluded from the analysis anyways
 check <- test2 %>% filter(is.na(SampleID))
 
@@ -64,8 +75,8 @@ asvs_combined <- test2 %>% filter(!is.na(SampleID))
 totsample_asvs <- asvs_combined %>% column_to_rownames(var = "SampleID")
 totsample_asvs <- as.data.frame(t(totsample_asvs))
 
-# save output - this is the asv table we will use for analysis
-saveRDS(totsample_asvs, file = "data/sequencing_data/asvtable_total_samples.rds")
+# save output 
+# saveRDS(totsample_asvs, file = "data/sequencing_data/asvtable_total_samples.rds") 
 
 #### check-ups ####
 # get summaries of how many samples there is for each variable and their levels
@@ -86,29 +97,6 @@ investigate <- sampling_data %>%
 investigate <- lab_data %>%
   filter(str_detect(SampleID, "P")) %>% filter(!is.na(DryMass_mg) & !is.na(PCRID) & !DryMass_mg < 0 & !biomassUncertainty == "high") %>% select(-biomassUncertainty) # techically, the negative biomass samples were processed but the should be removed as they do not make any sense incl. the biomass measured with high uncertainty
 
-#### plotting sampling effort by year ####
-test <- data.frame(table(sampling_lab_data_filter$Date)) # how many samples per day
-
-# noticed two samples from May 20th 2019! 
-test <- test %>% filter(!Var1 == "2019-05-20")
-
-#Format dates
-df <- test
-df$Date <- as.Date(test$Var1)
-#Create year
-df$Year <- format(df$Date,'%Y')
-#Create day and month of year
-df$Day <- format(df$Date,'%d')
-df$Month <- format(df$Date,'%m')
-#Assign a dummy date
-df$DayMonth <- as.Date(paste0(2019,'-',df$Month,'-',df$Day))
-#Now sketch for plot
-ggplot(data = df, aes(x = DayMonth, y = Freq, color = Year, group = Year)) + 
-  geom_line(size = 2) +
-  scale_x_date(date_breaks = "3 days", date_labels = "%d-%m") + theme_bw() + scale_color_manual(values=c("#CC6666", "#9999CC")) +
-  xlab("sampling date") + ylab("# of samples collected")
-
-
 #### match asvtable data with lab meta data (not all samples were sequenced) ####
 #keep <- colnames(asv_table)
 #dplyr::setdiff(lab_data$PCRID, colnames(asv_table))
@@ -119,23 +107,57 @@ ggplot(data = df, aes(x = DayMonth, y = Freq, color = Year, group = Year)) +
 
 # library 36, 44 is missing from the 2019 data (we expected an issue with 44, not 36). the rest seems to be few samples here and there and un-sequenced samples
 
-##### CONTINUE FROM HERE #######
+##### combine sampling data, lab data (one table already) with environmental data #######
 
-keep <- colnames(totsample_asvs) # the sample IDs of the samples we have sequenced (icnl. blanks and negatives)
+# to merge, we need a Year column in the sampling lab data
+sampling_lab_data_filter$Year <- year(ymd(sampling_lab_data_filter$Date))
 
-labdata <- sampling_lab_data_filter %>% filter(SampleID %in% keep) # match the lab data to samples we have sequence data from
+# merge tables
+combData <- merge(sampling_lab_data_filter, environData, by.x = c("RouteID_JB", "Year"), by.y = c("routeID", "Year"), all = T) # still contains blanks, sample size fractions
 
-nomatchsamples <- anti_join(tasvs, labdata) # rows in the asv table that don't have a match in the labdata - many bird droppings samples and some samples from lib 28
-keep <- labdata$PCRID
+# remove NA samples (samples that have environmental variables calculated but no data in sampling and lab tables)
+combData <- combData %>% filter(!is.na(SampleID)) %>% filter(!is.na(RouteID_JB)) 
+combData$concentrationUnit <- combData$concentrationUnit %>% replace_na('ng/µl')
 
-asvtable <- asvs[ ,colnames(asvs) %in% keep]
+# remove size fraction and data associated with size fractions and keep only unique rows/sampleIDs
+combData_noSizeFrac <- combData %>% select(-SampleID_size, -DryMass_mg, -PCRID, -concentration) %>% distinct(.keep_all = TRUE)
+
+### check samples between sequenced samples and samples from the combined data ####
+
+keep <- colnames(totsample_asvs) # the sample IDs of the samples we have sequenced (incl. blanks and negatives)
+
+check <- setdiff(colnames(totsample_asvs), combData_noSizeFrac$SampleID) # in asv table but not in the other data - blanks and tests
+setdiff(combData_noSizeFrac$SampleID, colnames(totsample_asvs)) # the other way around, no match
+
+# check read count of blanks before removing them
+test <- totsample_asvs[, which((names(totsample_asvs) %in% check)==TRUE)]
+colSums(test) # blanks are empty, tests are not - it is ok to remove them!
+
+keep <- combData_noSizeFrac$SampleID
+
+# remove the blanks from the asv table
+asvtable <- totsample_asvs[ ,colnames(totsample_asvs) %in% keep]
 rowSums(asvtable)
 
-otus <-
+# check whether any samples are missing
+setdiff(combData_noSizeFrac$SampleID, colnames(asvtable))
+setdiff(colnames(asvtable), combData_noSizeFrac$SampleID)
+
+asvs <-
   asvtable[apply(asvtable[,-1], 1, function(x)
-    ! all(x == 0)),] # remove rows that contain only zeros (OTUs that are not present in the subsetted samples)
+    ! all(x == 0)),] # remove rows that contain only zeros (ASVs that are not present in the subsetted samples)
 
-keep <- rownames(otus)
+keep <- rownames(asvs)
 
-taxonomy <- taxonomy %>% filter(occurrenceId %in% keep)
-min(colSums(otus))
+# remove taxonomy data for sequences that are not present in the subsetted asv table
+taxonomy <- taxonomy_data %>% filter(occurrenceId %in% keep) 
+
+# keep only asvs that passed the taxonomic assignment and filtering
+20874-18707 # this step removes 2167 sequences with no taxonomic assignment to insecta and arachnids
+keep <- taxonomy$occurrenceId
+asv <- asvs[rownames(asvs) %in% keep, ] # now the asv table and the taxonomy table match
+
+# save output for analysis - now all tables are aligned
+saveRDS(taxonomy, file = "data/cleaned_data/taxonomy_filtered.rds")
+saveRDS(asv, file = "data/cleaned_data/asvs_filtered.rds") 
+saveRDS(combData_noSizeFrac, file = "data/cleaned_data/combData_noSizeFrac.RDS") 

@@ -28,7 +28,7 @@ environData <- read_delim("data/environmental_data/covariate-data/DK_environData
 ### merging total samples from size sorted samples ###########
 # copy the sampleID_size to the NA SampleID cells
 lab_data <- lab_data %>% 
-  mutate(SampleID = coalesce(SampleID_size,SampleID))
+  mutate(SampleID = coalesce(SampleID_size, SampleID))
 
 # remove size fraction delimiters from the sampleID
 lab_data$SampleID<-gsub("S","",as.character(lab_data$SampleID))
@@ -60,7 +60,8 @@ sampling_lab_data_filter <- sampling_lab_data_filter %>% group_by(SampleID) %>% 
 # prepare the asv table by making a column with PCRIDs
 t.asvs <- t(asv_table)
 t.asvs <- as.data.frame(t.asvs) %>% rownames_to_column(var = "PCRID") 
-test <- full_join(keep, t.asvs, by = "PCRID") # this step removes the German samples
+test <- full_join(keep, t.asvs, by = "PCRID") # merge sampleID, PCRID with the sequenced samples - this step removes the German samples
+str(test)
 test[, 3:26344][is.na(test[, 3:26344])] <- 0 # replace introduced NAs with zero
 
 # summarize the reads per total sample instead of by size fraction
@@ -71,8 +72,10 @@ check <- test2 %>% filter(is.na(SampleID))
 
 # remove the NA sample
 asvs_combined <- test2 %>% filter(!is.na(SampleID)) 
-
-totsample_asvs <- asvs_combined %>% column_to_rownames(var = "SampleID")
+str(asvs_combined)
+totsample_asvs <- asvs_combined %>% column_to_rownames(var = "SampleID") 
+str(totsample_asvs)
+# revert back to asv table format with samples as columns and asvs as rows
 totsample_asvs <- as.data.frame(t(totsample_asvs))
 
 # save output 
@@ -84,18 +87,13 @@ test <- anti_join(sampling_data, lab_data, by = "SampleID") # in sampling data b
 
 test2 <- anti_join(lab_data, sampling_data, by = "SampleID") # in lab data but not in sampling data, mostly blanks, negative, ethanol test and other lab test sub samples 
 
-length(unique(sampling_lab_data_filter[["RouteID_JB"]])) # how many routes  
-length(unique(sampling_lab_data_filter[["PID"]])) # how many pilots
-data.frame(table(sampling_lab_data_filter$Wind)) # how often were the different wind categories registered  - the empty entries is routes where we either do not have metadata or that they weren't sampled
-data.frame(table(sampling_lab_data_filter$Temperature)) # how many samples were collected at different temperature intervals
-
 # how many collected samples?
 investigate <- sampling_data %>%
-  filter(str_detect(SampleID, "P")) %>% filter(!is.na(Date)) 
+  filter(str_detect(SampleID, "P")) %>% filter(!is.na(Date))
 
 # how many lab processed samples?
 investigate <- lab_data %>%
-  filter(str_detect(SampleID, "P")) %>% filter(!is.na(DryMass_mg) & !is.na(PCRID) & !DryMass_mg < 0 & !biomassUncertainty == "high") %>% select(-biomassUncertainty) # techically, the negative biomass samples were processed but the should be removed as they do not make any sense incl. the biomass measured with high uncertainty
+  filter(str_detect(SampleID, "P")) %>% filter(!is.na(DryMass_mg) & !is.na(PCRID) & !DryMass_mg < 0 & !biomassUncertainty == "high") %>% select(-biomassUncertainty) # technically, the negative biomass samples were processed but the should be removed as they do not make any sense incl. the biomass measured with high uncertainty
 
 #### match asvtable data with lab meta data (not all samples were sequenced) ####
 #keep <- colnames(asv_table)
@@ -154,8 +152,14 @@ taxonomy <- taxonomy_data %>% filter(occurrenceId %in% keep)
 
 # keep only asvs that passed the taxonomic assignment and filtering
 20874-18707 # this step removes 2167 sequences with no taxonomic assignment to insecta and arachnids
+
+# some samples do not have any reads after filtering and cleaning
+asvs_subset = asvs[, !(colSums(asvs) == 0)]
+1324-1180 # 144 samples do not have sequences - these were processed in lab, but never send for sequencing
+asvs_examine = asvs[, (colSums(asvs) == 0)]
+
 keep <- taxonomy$occurrenceId
-asv <- asvs[rownames(asvs) %in% keep, ] # now the asv table and the taxonomy table match
+asv <- asvs_subset[rownames(asvs_subset) %in% keep, ] # now the asv table and the taxonomy table match
 
 # save output for analysis - now all tables are aligned
 saveRDS(taxonomy, file = "data/cleaned_data/taxonomy_filtered.rds")

@@ -161,6 +161,10 @@ asvs_examine = asvs[, (colSums(asvs) == 0)]
 keep <- taxonomy$occurrenceId
 asv <- asvs_subset[rownames(asvs_subset) %in% keep, ] # now the asv table and the taxonomy table match
 
+# match samples between data and asvs
+keep <- colnames(asvs)
+combData_noSizeFrac <- combData_noSizeFrac %>% filter(SampleID %in% keep) 
+
 # save output for analysis - now all tables are aligned
 saveRDS(taxonomy, file = "data/cleaned_data/taxonomy_filtered.rds")
 saveRDS(asv, file = "data/cleaned_data/asvs_filtered.rds") 

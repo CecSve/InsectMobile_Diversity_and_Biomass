@@ -13,6 +13,8 @@ library(fossil)
 library(lme4)
 library(lmerTest)
 library(MuMIn)
+library(Rarefy)
+library(breakaway) # for calculating estimated richness instead of rarefied richness
 
 # visualisation
 library(sjPlot)
@@ -81,13 +83,26 @@ taxonomy %>%
   mutate(Freq = n/sum(n)) %>% 
   arrange(desc(n))
 
-table(taxonomy$order)
-
-# how frequent are the different match types
+# how many bins are species names associated with (ordered descending)
 taxonomy %>%
-  group_by(matchtype) %>%
-  summarise(n = n()) %>%
-  mutate(Freq = n/sum(n))
+  drop_na(species) %>% 
+  group_by(species) %>%
+  summarise(bins = n_distinct(scientificName)) %>% 
+  arrange(desc(bins))
+
+table(taxonomy$order) # several wingless orders in there - potential prey/gut content?
+
+# how frequent are the different match types across sequences 
+taxonomy %>%
+  group_by(matchType) %>%
+  summarise(asvs = n()) %>%
+  mutate(freq = asvs/sum(asvs))
+
+# how frequent are the different match types across BINs
+taxonomy %>%
+  group_by(matchType) %>%
+  summarise(bins = n_distinct(scientificName)) %>% 
+  mutate(freq = bins/sum(bins))
 
 #### Adding richness and diversity variables ####
 
@@ -95,10 +110,68 @@ pa_asvs <- decostand(asvs, method = "pa") # transform asv table into presence ab
 
 #Data has species as rows and sites as columns, but we need the opposite. Thus, transpose the original data
 tpa_asvs <- t(pa_asvs) 
+tpa_asvs[1:5,1:5] # samples as rows, asvs as columns
+tasvs <- t(asvs) # read abundance transposed table
+pa_asvs[1:5,1:5] # asvs are rows, samples as columns 
+
+##### vegan ####
+
+# get minimum number of reads for rarefying
+quantile(rowSums(dtasvs), probs = seq(0, 1, 0.2)) # first see how many samples are associated with how many reads, setting it to min is quite low in this case, but at least we do not remove any more samples
+min_n_seqs <- min(rowSums(dtasvs))
+dtasvs <- as.data.frame(tasvs)
+str(dtasvs)
+
+# rarefy each sample to the minimum sequence depth  - sequences in the samples are now distributed across their associated ASVs summarizing the sample abundances to the minimum reads (min_n_seq)
+
+###### rarefied richness per sample (number of taxa per sample) ####
+richness <- dtasvs %>% 
+  rarefy(min_n_seqs) %>% 
+  as_tibble(rownames = "SampleID") %>% 
+  select(SampleID, richness = value)
+
+###### rarefied Shannon diversity ####
+# make a funtion for iterating the Sannon diversity per sample calculation
+shannon_iteration <- function(){
+  dtasvs %>% 
+    rrarefy(sample = min_n_seqs) %>% 
+    diversity()
+  }
+
+# iterate a 1000 times and extract mean Shannon diversity
+shannon <- replicate(100, shannon_iteration()) %>% 
+  as_tibble(rownames = "SampleID", .name_repair = "unique") %>% 
+  pivot_longer(-SampleID) %>% 
+  group_by(SampleID) %>% 
+  summarise(shannon = mean(value))
+
+# rarecurve - this step takes a long time
+rarecurve_data <- rarecurve(dtasvs, step = 100)
+
+map_dfr(rarecurve_data, bind_rows) %>% 
+  bind_cols(SampleID = rownames(dtasvs), .) %>% 
+  pivot_longer(-SampleID) %>% 
+  drop_na() %>% 
+  mutate(n_seqs = as.numeric(str_replace(name, "N", ""))) %>%
+  select(-name) %>% 
+  ggplot(aes(x=n_seqs, y = value, group = SampleID)) + 
+  geom_vline(xintercept = min_n_seqs, color = "gray") + # add min_n_seq indication
+  geom_line() + 
+  theme_classic()
+
+##### add richness and diversity to data ####
+data_richness <- inner_join(data, richness, by = "SampleID") %>% 
+  inner_join(., shannon, by = "SampleID")
+
+saveRDS(data_richness, file = "data/cleaned_data/data_richness.RDS")
 
 #### iNEXT (Hill numbers) ####
 
 freq_asvs <- iNEXT::as.incfreq(pa_asvs)# transform incidence raw data (a species by sites presence-absence matrix) to incidence frequencies data (iNEXT input format, a row-sum frequencies vector contains total number of sampling units)
+
+# compute species diversity (Hill numbers with q = 0, 1 and 2) with a particular user-specified level of sample size or sample coverage.
+out <- estimateD(pa_asvs, q = c(0,1,2), datatype = "incidence_raw", base="coverage", level=0.985, conf=NULL, nboot = 5)
+out
 
 # set a series of sample sizes (m) for R/E computation
 t <- seq(1, 4000, by=50)

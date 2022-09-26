@@ -1,5 +1,6 @@
 library(tidyverse)
 library(ggcorrplot)
+library(GGally)
 
 resFolders <- "data/cleaned_data"
 
@@ -16,6 +17,7 @@ df <- df %>%
         select(-est_richness_model, -biomassUncertainty)
 
 #sep for Year and Time_band eventually
+ggpairs(df)
 
 #get and plot correlation matrix
 corr <- round(cor(df, use="pairwise.complete.obs"), 2)

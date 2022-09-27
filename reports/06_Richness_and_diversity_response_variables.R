@@ -6,7 +6,6 @@ library(readr)
 library(data.table)
 
 # stats
-library(iNEXT)
 library(vegan)
 library(phyloseq)
 library(fossil)
@@ -60,6 +59,36 @@ asvs_allmatches <- asvs
 asvs <- asvs_allmatches %>% filter(rownames(asvs_allmatches) %in% keep)
 min(rowSums(asvs)) # some very low read sequences in there...
 min(colSums(asvs))
+
+# keep unique BINs and family-level combinations
+
+nrow(unique(taxonomy[,c('scientificName','genus')]))
+n_distinct(taxonomy$scientificName) # no difference between the two, so no BINs are assigned to the same family
+
+asvs_allBINs <- asvs # keep the dataframe
+forsubset <- taxonomy_allBINs %>% select(occurrenceId, scientificName) # to keep the samples, we need to include BINs temporarily in the AVS table
+asvs <- asvs_allBINs %>% rownames_to_column("occurrenceId") 
+asvs <- left_join(asvs, forsubset, by = "occurrenceId") # include BINs in the asv table
+
+# keep only unique BINs while retaining reads in samples
+asvs <- asvs %>%
+  pivot_longer(!c(occurrenceId, scientificName),
+               names_to = "SampleID",
+               values_to = "read_count") %>%
+  filter(read_count > 0) %>%
+  distinct(scientificName, SampleID, .keep_all = T) %>%
+  pivot_wider(names_from = SampleID,
+              values_from = read_count,
+              values_fill = 0) %>% 
+  select(-scientificName) %>% 
+  column_to_rownames(var = "occurrenceId")
+
+keep <- rownames(asvs)
+taxonomy_allBINs <- taxonomy
+taxonomy <- taxonomy_allmatches %>% filter(occurrenceId %in% keep)
+
+min(rowSums(asvs)) # some very low read sequences in there...
+min(colSums(test)) 
 
 # How many unique in each taxonomic level? 
 
@@ -136,7 +165,7 @@ taxonomy %>%
 # how many bins are species names associated with (ordered descending)
 taxonomy %>%
   drop_na(species) %>% 
-  group_by(species) %>%
+  group_by(species, order) %>%
   summarise(bins = n_distinct(scientificName)) %>% 
   arrange(desc(bins))
 
@@ -207,7 +236,7 @@ asvs_long_nozero <- asvs_long %>% filter(value > 0)
 
 #detach("package:seqinr", unload=TRUE)
 asvs_long_nozero %>% filter(SampleID == "P100.1B") %>% 
-  count(SampleID, value) # this means for example that 13,198 asvs/seqIDs showed up 0 times in the sample
+  count(SampleID, value) %>% arrange(desc(value)) # this means, for example for the first row, that 1 asv had 20,687 reads in the sample
 
 get_breakaway <- function(x){
   ba <- breakaway(x)
@@ -247,41 +276,4 @@ data_richness %>%
   pivot_longer(-c(SampleID, n_reads)) %>% 
   ggplot(aes(x = n_reads, y = value, color=name)) + geom_point() + geom_smooth()
 
-saveRDS(data_richness, file = "data/cleaned_data/data_richness.RDS")
-
-#### iNEXT (Hill numbers) ####
-
-freq_asvs <- iNEXT::as.incfreq(pa_asvs)# transform incidence raw data (a species by sites presence-absence matrix) to incidence frequencies data (iNEXT input format, a row-sum frequencies vector contains total number of sampling units)
-
-# compute species diversity (Hill numbers with q = 0, 1 and 2) with a particular user-specified level of sample size or sample coverage.
-out <- estimateD(pa_asvs, q = c(0,1,2), datatype = "incidence_raw", base="coverage", level=0.985, conf=NULL, nboot = 5)
-out
-
-# set a series of sample sizes (m) for R/E computation
-t <- seq(1, 4000, by=50)
-
-#apply `iNEXT` main function
-asvspa.inext <- iNEXT(freq_asvs, q = 0, datatype = "incidence_freq", size = t) 
-
-asvspa.inext$DataInfo # summarizing data information, returns basic data information including the reference sample size (n), observed species richness (S.obs), a sample coverage estimate (SC), and the first ten frequency counts (f1‐f10)
-
-asvspa.inext$iNextEst # showing diversity estimates along with related statistics for a series of rarefied and extrapolated samples
-asvspa.inext$AsyEst # showing asymptotic diversity estimates along with related statistics
-
-ChaoRichness(freq_asvs, datatype = "incidence_freq", conf = 0.95)
-
-#look at the data
-asvspa.inext
-
-# Sample-size-based R/E curves without figure legend
-ggiNEXT(asvspa.inext, type=1) +
-  theme_bw(base_size = 18) + theme(legend.position="none")
-
-# Sample completeness curves without figure legend
-ggiNEXT(asvspa.inext, type=2) +ylim(c(0.9,1)) +
-  theme_bw(base_size = 18) + theme(legend.position="none")
-
-# Coverage-based R/E curves with legend placed at the bottom, where “Guides” and “Method” are left out
-ggiNEXT(asvspa.inext, type=3) + xlim(c(0.9,1)) +
-  theme_bw(base_size = 18) +
-  theme(legend.position="bottom", legend.title=element_blank())
+saveRDS(data_richness, file = "data/cleaned_data/data_richness_BINs.RDS") # the saved output without the BIN extension is for unique sequences 

@@ -5,8 +5,7 @@ library(GGally)
 resFolders <- "data/cleaned_data"
 
 #read in biodiversity data
-df <- readRDS(paste(resFolders,"data_richness.RDS", sep="/"))
-
+df <- readRDS(paste(resFolders,"data_richness_BINs.RDS", sep="/"))
 
 #subset to response metrics
 df <- df %>%
@@ -14,7 +13,7 @@ df <- df %>%
                       contains("shannon"),
                       contains("Biomass"),
                       contains("n_reads")) %>%
-        select(-est_richness_model, -biomassUncertainty)
+        select(-est_richness_model, -biomassUncertainty, -est_richness_lci, -est_richness_uci)
 
 #sep for Year and Time_band eventually
 ggpairs(df)

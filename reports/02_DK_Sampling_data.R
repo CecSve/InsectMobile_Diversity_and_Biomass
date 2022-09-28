@@ -9,8 +9,8 @@ library(lubridate)
 metadata_1 <- read.delim("data/sampling_data/SamplingEvent.txt")
 metadata_2 <- read.delim("data/sampling_data/SampleReg_20042020.txt") # update sheet with PilotNotes!
 
-# make sure the columns are identical between the two dataframes
-names(metadata_1) # remove exmpty and unneccesary columns
+# make sure the columns are identical between the two data frames
+names(metadata_1) # remove empty and unnecessary columns
 
 metadata_1 <- metadata_1 %>%
   select(
@@ -44,9 +44,7 @@ metadata_2 <-
   )
 
 metadata_2 <- metadata_2 %>% 
-  rename(SampleID = PilotTripID)
-
-metadata_2 <- metadata_2 %>% 
+  rename(SampleID = PilotTripID) %>% 
   rename(subLandUseType = SubLandUseType)
 
 #### merge metadata ####
@@ -151,8 +149,6 @@ coord_2$decimalLongitude <- coordinates(test2)[,1]
 coord_2$decimalLatitude <- coordinates(test2)[,2]
 
 ### examine differences in samples ##########################
-#setdiff(coords$SampleID, metadata$routeID) # all metadata are in labeldata
-#setdiff(metadata$SampleID, coords$SampleID) # not all metadata are in labeldata
 
 # combine metadata and coordination data
 test <- left_join(metadata, coord_1, by = c("RouteID_JB" = "routeID"), keep = T)
@@ -182,7 +178,12 @@ metadata <-
     -decimalLatitude.y
   )
 
-### time & date formatting ########################## NOT DONE! still also need to merge it all in the end and make sure no data is missing
+### time & date formatting ########################## 
+
+# the time has been swapped for P338.2A
+i1 <- metadata$SampleID == "P338.2A"
+metadata[i1, c("StartTime", "EndTime")] <- metadata[i1, c("EndTime", "StartTime")]
+
 test <- metadata
 
 test <- test %>% 
@@ -223,8 +224,12 @@ str(test)
 # create eventTime interval
 metadata$eventTime <- paste(test$eventStart, test$eventEnd, sep = "/")
 
+# reorder date
 metadata$Date <-
   as.Date(with(test, paste(year, month, day, sep = "-")), "%Y-%m-%d")
+
+time_add <- test %>% select(SampleID, year, month, day)
+metadata <- left_join(metadata, time_add, by = "SampleID")
 
 # make a column for whether sampling was midday or evening
 time <- as.POSIXct(strptime(metadata$StartTime, "%H:%M"), "UTC")
@@ -265,6 +270,7 @@ metadata <- metadata %>%
                               "20-25" = "20-24"))
 
 #format Date
+table(metadata$Date)
 str(metadata)
 metadata$yDay <- yday(metadata$Date)
 
@@ -272,6 +278,7 @@ metadata$yDay <- yday(metadata$Date)
 # convert the time columns to datetimes
 test <- metadata
 str(test)
+
 test$StartTime <- as.POSIXct(metadata$StartTime,
                              format='%H:%M:%S')
 test$EndTime   <- as.POSIXct(metadata$EndTime,
@@ -288,7 +295,7 @@ metadata$Time_driven <- as.double(metadata$Time_driven)
 str(metadata)
 metadata$Velocity <- (metadata$Route_length*2)/metadata$Time_driven
 
-# remove samples with no date
+# remove the 224 samples with no date
 metadata <- metadata %>% 
   filter(!is.na(Date))
 

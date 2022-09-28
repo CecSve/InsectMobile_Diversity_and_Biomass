@@ -23,9 +23,8 @@ environData <- read_delim("data/environmental_data/covariate-data/DK_environData
                               delim = "\t", escape_double = FALSE, 
                               trim_ws = TRUE)
 
-# test <- sampling_data %>% filter(!is.na(Date)) # only retain samples with an associated date
-
 ### merging total samples from size sorted samples ###########
+
 # copy the sampleID_size to the NA SampleID cells
 lab_data <- lab_data %>% 
   mutate(SampleID = coalesce(SampleID_size, SampleID))
@@ -43,13 +42,14 @@ sampling_lab_data <- full_join(sampling_data, lab_data, by = "SampleID")
 data_unique <- sampling_lab_data %>% 
   distinct(SampleID_size, .keep_all = TRUE)
 
-examine <- setdiff(sampling_lab_data, data_unique) # seems to be removing the unsampled routes mostly, but not only. Two sampled routes have duplicate samples in the sampling_lab_data sheet for some reason.The issue with P27 is easy to fix:
+check <- sampling_lab_data %>%
+  filter(duplicated(SampleID_size)) # duplicates are mostly un-sampled routes
 
 sampling_lab_data_filter <- sampling_lab_data %>%
   arrange(SampleID_size, -DryMass_mg) %>%
   filter(!duplicated(SampleID_size))
 
-examine <- setdiff(sampling_lab_data, sampling_lab_data_filter) # now only duplicates of the P27.1B and P112.1BS are removed (and all the unsampled routes)
+examine <- setdiff(sampling_lab_data, sampling_lab_data_filter) # now only duplicates of the P27.1B and P112.1BS are removed (and all the un-sampled routes)
 
 keep <- sampling_lab_data_filter %>% 
   dplyr::select(PCRID, SampleID) # we need to use the filter to avoid duplicate PCRIDs
@@ -65,61 +65,11 @@ sampling_lab_data_filter <- sampling_lab_data_filter %>%
     meanDNAconc = mean(concentration, na.rm = TRUE)
   ) %>% ungroup()
 
-# prepare the asv table by making a column with PCRIDs
-t.asvs <- t(asv_table)
-t.asvs <- as.data.frame(t.asvs) %>% 
-  rownames_to_column(var = "PCRID") 
-
-test <- full_join(keep, t.asvs, by = "PCRID") # merge sampleID, PCRID with the sequenced samples - this step removes the German samples
-str(test)
-
-test[, 3:26344][is.na(test[, 3:26344])] <- 0 # replace introduced NAs with zero
-
-# summarize the reads per total sample instead of by size fraction
-test2 <- test %>% 
-  select(-PCRID) %>% 
-  group_by(SampleID) %>% 
-  summarise_all(list(sum))
-
-# see if any sample IDs are missing - when we carry it out on test instead we see it is samples from 2017 and bird feces samples and they should be excluded from the analysis anyways
-check <- test2 %>% 
-  filter(is.na(SampleID))
-
-# remove the NA sample
-asvs_combined <- test2 %>% 
-  filter(!is.na(SampleID)) 
-
-str(asvs_combined)
-
-totsample_asvs <- asvs_combined %>% 
-  column_to_rownames(var = "SampleID") 
-
-str(totsample_asvs)
-
-# revert back to asv table format with samples as columns and asvs as rows
-totsample_asvs <- as.data.frame(t(totsample_asvs))
-
-# save output 
-# saveRDS(totsample_asvs, file = "data/sequencing_data/asvtable_total_samples.rds") 
-
 #### check-ups ####
 # get summaries of how many samples there is for each variable and their levels
-test <- anti_join(sampling_data, lab_data, by = "SampleID") # in sampling data but not in lab data, not sampled entries and pilots that did not sample after the instructions 
+check <- anti_join(sampling_data, lab_data, by = "SampleID") # in sampling data but not in lab data, not sampled entries and pilots that did not sample after the instructions 
 
-test2 <- anti_join(lab_data, sampling_data, by = "SampleID") # in lab data but not in sampling data, mostly blanks, negative, ethanol test and other lab test sub samples 
-
-# how many collected samples?
-investigate <- sampling_data %>%
-  filter(str_detect(SampleID, "P")) %>%
-  filter(!is.na(Date))
-
-# how many lab processed samples?
-investigate <- lab_data %>%
-  filter(str_detect(SampleID, "P")) %>%
-  filter(!is.na(DryMass_mg) &
-           !is.na(PCRID) &
-           !DryMass_mg < 0 &
-           !biomassUncertainty == "high") %>% select(-biomassUncertainty) # technically, the negative biomass samples were processed but they should be removed as they do not make any sense incl. the biomass measured with high uncertainty
+check2 <- anti_join(lab_data, sampling_data, by = "SampleID") # in lab data but not in sampling data, mostly blanks, negative, ethanol test and other lab test sub samples. Some true samples missing date, cancelled sampling etc. 
 
 #### match asvtable data with lab meta data (not all samples were sequenced) ####
 #keep <- colnames(asv_table)
@@ -162,6 +112,48 @@ combData_noSizeFrac <-
   select(-SampleID_size, -DryMass_mg, -PCRID, -concentration) %>%
   distinct(.keep_all = TRUE)
 
+#remove samples with  negative biomass and NA biomass
+combData_noSizeFrac <- combData_noSizeFrac %>% 
+  filter(!is.na(totalBiomass_mg) &
+           !totalBiomass_mg < 0)
+
+### match ASV table and samples ####
+
+# prepare the asv table by making a column with PCRIDs
+t.asvs <- t(asv_table)
+t.asvs <- as.data.frame(t.asvs) %>% 
+  rownames_to_column(var = "PCRID") 
+
+test <- full_join(keep, t.asvs, by = "PCRID") # merge sampleID, PCRID with the sequenced samples - this step removes the German samples
+str(test)
+
+test[, 3:26344][is.na(test[, 3:26344])] <- 0 # replace introduced NAs with zero
+
+# summarize the reads per total sample instead of by size fraction
+test2 <- test %>% 
+  select(-PCRID) %>% 
+  group_by(SampleID) %>% 
+  summarise_all(list(sum))
+
+# see if any sample IDs are missing - when we carry it out on test instead we see it is samples from 2017 and bird feces samples and they should be excluded from the analysis anyways
+check <- test2 %>% 
+  filter(is.na(SampleID))
+
+# remove the NA sample IDs 
+asvs_combined <- test2 %>% 
+  filter(!is.na(SampleID)) 
+
+str(asvs_combined)
+
+totsample_asvs <- asvs_combined %>% 
+  column_to_rownames(var = "SampleID") 
+
+# revert back to asv table format with samples as columns and asvs as rows
+totsample_asvs <- as.data.frame(t(totsample_asvs))
+
+# save output 
+# saveRDS(totsample_asvs, file = "data/sequencing_data/asvtable_total_samples.rds") 
+
 ### check samples between sequenced samples and samples from the combined data ####
 
 keep <- colnames(totsample_asvs) # the sample IDs of the samples we have sequenced (incl. blanks and negatives)
@@ -195,25 +187,20 @@ taxonomy <- taxonomy_data %>%
   filter(occurrenceId %in% keep) 
 
 # keep only asvs that passed the taxonomic assignment and filtering
-20874-18707 # this step removes 2167 sequences with no taxonomic assignment to insecta and arachnids
+22990-18490 # this step removes 4500 sequences from the taxonomy table (probably ASVs from the German samples)
 
 # some samples do not have any reads after filtering and cleaning
 asvs_subset = asvs[, !(colSums(asvs) == 0)]
-1324-1180 # 144 samples do not have sequences - these were processed in lab, but never send for sequencing
+1287-1149 # 138 samples do not have sequences - these were processed in lab, but never send for sequencing or did not have any sequences retained
 asvs_examine = asvs[, (colSums(asvs) == 0)]
 
 keep <- taxonomy$occurrenceId
 asv <- asvs_subset[rownames(asvs_subset) %in% keep, ] # now the asv table and the taxonomy table match
 
 # match samples between data and asvs
-keep <- colnames(asvs)
+keep <- colnames(asv)
 combData_noSizeFrac <- combData_noSizeFrac %>% 
   filter(SampleID %in% keep) 
-
-#remove samples with  negative biomass and NA biomass
-combData_noSizeFrac <- combData_noSizeFrac %>% 
-  filter(!is.na(totalBiomass_mg) &
-           !totalBiomass_mg < 0)
 
 # save output for analysis - now all tables are aligned
 saveRDS(taxonomy, file = "data/cleaned_data/taxonomy_filtered.rds")

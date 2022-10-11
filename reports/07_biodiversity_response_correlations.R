@@ -20,7 +20,11 @@ ggpairs(df)
 
 #get and plot correlation matrix
 corr <- round(cor(df, use="pairwise.complete.obs"), 2)
+
+png(file="plots/richness_variable_correlations.png",
+     width=1500, height=1200, res=300)
 ggcorrplot(corr, hc.order = TRUE, type = "lower",lab = TRUE,
            outline.col = "white",
            ggtheme = ggplot2::theme_minimal,
            colors = c("#6D9EC1", "white", "#E46726"))
+dev.off()

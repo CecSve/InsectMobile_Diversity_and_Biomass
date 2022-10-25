@@ -211,8 +211,8 @@ getEffect <- function(model){
 # we will not normalise the response to ease interpretation, although square root transformation normalises the distribution
 
 #agriculture
-hist(allInsects$Agriculture_500)
-hist(sqrt(allInsects$Agriculture_500)) # does not help
+hist(allInsects$Agriculture_1000)
+hist(sqrt(allInsects$Agriculture_1000)) # does not help
 
 lme50 <- lmer(richness_est ~ (Agriculture_50) + Time_band + Year + 
                 Time_band:cnumberTime + cTL + cyDay + 

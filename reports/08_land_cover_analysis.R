@@ -36,6 +36,10 @@ allInsects <- read_rds("data/cleaned_data/data_richness_BINs.RDS")
 # load German data
 # allInsects <- read.delim("cleaned-data/DE_allInsects.txt")
 
+# change the five land covers to be 0-100 instead of 0-1
+allInsects_trans_landcovers <- allInsects
+allInsects[,33:60] <- allInsects[,33:60]*100
+
 #### General check-ups and adding variables for analysis ############################################
 
 # remove samples with high uncertainty for the biomass estimation, NA biomass samples, samples without a date
@@ -78,13 +82,15 @@ allInsects %>%
 ### Analysis ##############################################
 
 ##### Supplementary figure: the data ##########################
+
+###### richness #####
 qU <- ggplot(allInsects,aes(x=Urban_1000,y=(richness_est)))+
   geom_point(col=landuseCols[1])+
   scale_y_log10() +
   theme_bw() +
   geom_smooth(method="lm",color="grey70") + scale_x_continuous(
     labels = function(x)
-      paste0(x * 100, "%")) +
+      paste0(x, "%")) +
   xlab("") +ylab("") + labs(subtitle = "Urban cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
 
 qF <- ggplot(allInsects,aes(x=Agriculture_1000,y=(richness_est)))+
@@ -93,7 +99,7 @@ qF <- ggplot(allInsects,aes(x=Agriculture_1000,y=(richness_est)))+
   theme_bw() +
   geom_smooth(method="lm",color="grey70")+scale_x_continuous(
     labels = function(x)
-      paste0(x * 100, "%")) +
+      paste0(x, "%")) +
   xlab("") +ylab("") + labs(subtitle = "Farmland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
 
 qD <- ggplot(allInsects,aes(x=Open.uncultivated.land_1000,y=(richness_est)))+
@@ -103,7 +109,7 @@ qD <- ggplot(allInsects,aes(x=Open.uncultivated.land_1000,y=(richness_est)))+
   geom_smooth(method="lm",color="grey70")+scale_x_continuous(
     #limits = c(0, 0.16),
     labels = function(x)
-      paste0(x * 100, "%")) +
+      paste0(x, "%")) +
   xlab("") +ylab("Estimated richness") + labs(subtitle = "Grassland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5),"cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 20))
 
 qW <- ggplot(allInsects,aes(x=Wetland_1000,y=(richness_est)))+
@@ -112,7 +118,7 @@ qW <- ggplot(allInsects,aes(x=Wetland_1000,y=(richness_est)))+
   theme_bw() +
   geom_smooth(method="lm",color="grey70")+scale_x_continuous(
     labels = function(x)
-      paste0(x * 100, "%")) +
+      paste0(x, "%")) +
   xlab("") +ylab("") + labs(subtitle = "Wetland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5),"cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
 
 qFo <- ggplot(allInsects,aes(x=Forest_1000,y=(richness_est)))+
@@ -121,7 +127,7 @@ qFo <- ggplot(allInsects,aes(x=Forest_1000,y=(richness_est)))+
   theme_bw() +
   geom_smooth(method="lm",color="grey70")+scale_x_continuous(
     labels = function(x)
-      paste0(x * 100, "%")) +
+      paste0(x, "%")) +
   xlab("") +ylab("") + labs(subtitle = "Forest cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
 
 supp_fig <- cowplot::plot_grid(qU,qF,qD,qW,qFo,ncol=1)
@@ -129,19 +135,74 @@ supp_fig <- cowplot::plot_grid(qU,qF,qD,qW,qFo,ncol=1)
 #cowplot::save_plot("plots/DK_Landcover_percent.tiff", supp_fig, base_width = 5, base_height = 14, dpi = 800)
 
 cowplot::save_plot(
-  "plots/DK_Landcover_percent.png",
+  "plots/DK_Landcover_richness_percent.png",
   supp_fig,
   base_width = 5,
   base_height = 14,
   dpi = 800
 )
 
-# change the five land covers to be 0-100 instead of 0-1
-allInsects_trans_landcovers <- allInsects
-allInsects[,33:60] <- allInsects[,33:60]*100
+###### biomass #####
+qU <- ggplot(allInsects,aes(x=Urban_1000,y=(totalBiomass_mg)))+
+  geom_point(col=landuseCols[1])+
+  scale_y_log10() +
+  theme_bw() +
+  geom_smooth(method="lm",color="grey70") + scale_x_continuous(
+    labels = function(x)
+      paste0(x, "%")) +
+  xlab("") +ylab("") + labs(subtitle = "Urban cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
+
+qF <- ggplot(allInsects,aes(x=Agriculture_1000,y=(totalBiomass_mg)))+
+  geom_point(col=landuseCols[2])+
+  scale_y_log10() +
+  theme_bw() +
+  geom_smooth(method="lm",color="grey70")+scale_x_continuous(
+    labels = function(x)
+      paste0(x, "%")) +
+  xlab("") +ylab("") + labs(subtitle = "Farmland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
+
+qD <- ggplot(allInsects,aes(x=Open.uncultivated.land_1000,y=(totalBiomass_mg)))+
+  geom_point(col=landuseCols[3])+
+  scale_y_log10() +
+  theme_bw() +
+  geom_smooth(method="lm",color="grey70")+scale_x_continuous(
+    #limits = c(0, 0.16),
+    labels = function(x)
+      paste0(x, "%")) +
+  xlab("") +ylab("Estimated biomass") + labs(subtitle = "Grassland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5),"cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 20))
+
+qW <- ggplot(allInsects,aes(x=Wetland_1000,y=(totalBiomass_mg)))+
+  geom_point(col=landuseCols[4])+
+  scale_y_log10() +
+  theme_bw() +
+  geom_smooth(method="lm",color="grey70")+scale_x_continuous(
+    labels = function(x)
+      paste0(x, "%")) +
+  xlab("") +ylab("") + labs(subtitle = "Wetland cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5),"cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
+
+qFo <- ggplot(allInsects,aes(x=Forest_1000,y=(totalBiomass_mg)))+
+  geom_point(col=landuseCols[5])+
+  scale_y_log10() +
+  theme_bw() +
+  geom_smooth(method="lm",color="grey70")+scale_x_continuous(
+    labels = function(x)
+      paste0(x, "%")) +
+  xlab("") +ylab("") + labs(subtitle = "Forest cover") + theme(plot.subtitle = element_text(size = 12, face = "bold"), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), axis.text = element_text(size = 16), axis.title.y = element_text(size = 16))
+
+supp_fig <- cowplot::plot_grid(qU,qF,qD,qW,qFo,ncol=1)
+
+#cowplot::save_plot("plots/DK_Landcover_percent.tiff", supp_fig, base_width = 5, base_height = 14, dpi = 800)
+
+cowplot::save_plot(
+  "plots/DK_Landcover_biomass_percent.png",
+  supp_fig,
+  base_width = 5,
+  base_height = 14,
+  dpi = 800
+)
 
 ##### Figure: pie chart#####################################
-
+###### richness ####
 routeMeans <- allInsects %>% 
   group_by(RouteID_JB) %>%
   dplyr::summarise(meanEstRichness = mean(richness_est))
@@ -204,6 +265,70 @@ fig_pie <- ggplot(forplot,aes(x="",y=value,fill=Land_cover, order = Land_cover))
 
 cowplot::save_plot("plots/DK_landcover_estRichness_proportions.png", fig_pie, base_width = 12, base_height = 6, dpi = 800) # cange to .tiff if included in publication
 
+###### biomass ####
+routeMeans <- allInsects %>% 
+  group_by(RouteID_JB) %>%
+  dplyr::summarise(meanEstRichness = mean(totalBiomass_mg))
+
+allInsects <- inner_join(allInsects,routeMeans,by="RouteID_JB") 
+
+#remove duplicates
+allInsects_pie <- allInsects %>%
+  dplyr::select(RouteID_JB,meanEstRichness,Agriculture_1000,
+                Forest_1000,Open.uncultivated.land_1000,
+                Urban_1000,Wetland_1000) %>%
+  distinct()
+
+#fill in missing column
+allInsects_pie$totalLand <- apply(allInsects_pie[,3:7],1,sum)
+allInsects_pie$Other_1000 <- 1-allInsects_pie$totalLand
+
+#divide up biomass into quantiles
+allInsects_pie$BiomassCats <- cut_number(allInsects_pie$meanEstRichness,n=5)
+
+#mean land cover per biomass cats
+allInsects_cat <- allInsects_pie %>%
+  group_by(BiomassCats) %>%
+  dplyr::summarise(Agriculture_1000 = mean(Agriculture_1000),
+                   Forest_1000 = mean(Forest_1000),
+                   Open.uncultivated.land_1000 = mean(Open.uncultivated.land_1000),
+                   Urban_1000 = mean(Urban_1000),
+                   Wetland_1000 = mean(Wetland_1000),
+                   Other_1000 = mean(Other_1000))
+
+#plot data by biomass categories
+allInsects_melt <- gather(allInsects_cat, Land_cover, value, -BiomassCats)
+
+#plot
+allInsects_melt <- allInsects_melt %>% mutate(
+  Land_cover = fct_relevel(
+    Land_cover,
+    "Urban_1000",
+    "Agriculture_1000",
+    "Open.uncultivated.land_1000",
+    "Wetland_1000",
+    "Forest_1000",
+    "Other_1000"))  
+
+levels(allInsects_melt$BiomassCats)
+max(allInsects$totalBiomass_mg)
+biomass.labs <- c("[2,59]"="2-59 mg", "(59,107]"="59-107 mg", "(107,154]"="107-154 mg", "(154,253]"="154-253 mg", "(253,6.83e+03]"="253-6831 mg")
+
+forplot <- allInsects_melt %>% filter(BiomassCats %in% c("[2,59]", "(253,6.83e+03]"))
+
+fig_pie <- ggplot(forplot,aes(x="",y=value,fill=Land_cover, order = Land_cover))+
+  geom_bar(stat="identity")+
+  facet_wrap(~BiomassCats, labeller = labeller(BiomassCats=biomass.labs[c(1,5)]), ncol = 1)+
+  coord_polar("y")+
+  theme_classic() + 
+  theme(axis.line = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  theme(legend.position="left", strip.text = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(1, 'cm')) + scale_fill_manual(values = landuseCols, name = "", labels = c("Urban", "Farmland", "Grassland", "Wetland", "Forest", "Other")) 
+
+cowplot::save_plot("plots/DK_landcover_biomass_proportions.png", fig_pie, base_width = 12, base_height = 6, dpi = 800) # cange to .tiff if included in publication
+
 ##### Table: linear Mixed Effects Model - Land covers #################
 # used cStops instead of cTL for DK data
 
@@ -211,6 +336,41 @@ cowplot::save_plot("plots/DK_landcover_estRichness_proportions.png", fig_pie, ba
 allInsects$avg_speed <- (allInsects$Distance_driven/1000)/(allInsects$Time_driven/60) # 1000 to get km and 60 to get hours instead of minutes
 table(allInsects$avg_speed)
 mean(allInsects$avg_speed, na.rm = T) # we will not use this variable, but it gives us an idea for how fast the routes were driven
+
+###### richness ####
+hist(allInsects$richness_est) # data is skewed
+hist(sqrt(allInsects$richness_est)) # square root of richness gives normal distribution makes grassland significant, but the pattern is generally the same
+
+# center the land covers to help model convergence if the covariates dont have large numbers - not the prettiest, but gets the job done 
+allInsects <- allInsects %>% 
+  mutate(cUrban_1000 = median(Urban_1000),
+         cFarmland_1000 = median(Agriculture_1000),
+         cGrassland_500 = median(Open.uncultivated.land_500),
+         cWetland_50 = median(Wetland_50),
+         cForest_1000 = median(Forest_1000),)
+
+# testing if glm may be better since response is right skewed
+test_model <- glmer(obs_richness ~ 
+                      (Urban_1000-cUrban_1000) +
+                      (Agriculture_1000-cFarmland_1000) + 
+                      (Open.uncultivated.land_500-cGrassland_500) +
+                      (Wetland_50-cWetland_50) +
+                      (Forest_1000-cForest_1000) +
+                      Time_band + 
+                      Year +
+                      Time_band:cnumberTime + cTL + cyDay + 
+                      (1|RouteID_JB) + (1|PID), family = poisson, data = allInsects)
+                  
+summary(test_model)
+anova(test_model)
+shapiro.test(resid(test_model))
+qqnorm(resid(test_model)) # plot of the normal theoretical quantiles against the exponential data quantiles
+qqline(resid(test_model)) # the residuals should fall along this line if they are normally distributed
+AICc(test_model)
+#check variance inflation factor
+vif(test_model)
+
+tab_model(test_model, collapse.ci = F, show.intercept = F, pred.labels = c("Urban (1000 m)", "Farmland (1000 m)","Grassland (500 m)", "Wetland (50 m)", "Forest (1000 m)", "Time band: evening vs midday", "Year", "Potential stops", "Day of year", "Time within midday", "Time within evening"), digits = 2)
 
 #full and final model - the effect of each land cover on estimated flying insect richnes
 full_model <- lmer(richness_est ~ 
@@ -225,16 +385,48 @@ full_model <- lmer(richness_est ~
                      (1|RouteID_JB) + (1|PID), data=allInsects) # data=subset(allInsects, c(Open.uncultivated.land_1000 < 20, Wetland_50 < 40))
 
 summary(full_model)
+anova(full_model)
+shapiro.test(resid(full_model))
+qqnorm(resid(full_model)) # plot of the normal theoretical quantiles against the exponential data quantiles
+qqline(resid(full_model)) # the residuals should fall along this line if they are normally distributed
 AICc(full_model)
 #check variance inflation factor
 vif(full_model)
 
-tab_model(full_model, collapse.ci = F, show.intercept = F, pred.labels = c("Urban (1000 m)", "Farmland (1000 m)","Grassland (500 m)", "Wetland (50 m)", "Forest (1000 m)", "Time band: evening vs midday", "Year", "Potential stops", "Day of year", "Time within midday", "Time within evening"), digits = 2)
+tab_model(full_model, collapse.ci = F, show.intercept = F, pred.labels = c("Urban (1000 m)", "Farmland (1000 m)","Grassland (500 m)", "Wetland (50 m)", "Forest (1000 m)", "Time band: evening vs midday", "Year", "Potential stops", "Day of year", "Time within midday", "Time within evening"), digits = 2) #, file = "plots/full_model_richness.html"
 
 # a quick plot
 sjPlot::plot_model(full_model)
 
-predict(full_model)
+# "Biomass (mg)", "mean DNA conc. (ng/ul)",
+
+###### biomass ####
+
+hist(allInsects$totalBiomass_mg)
+hist(log(allInsects$totalBiomass_mg))
+
+#full and final model - the effect of each land cover on estimated flying insect biomass. Notice the different buffer sizes from biomass!
+full_model <- lmer(log(totalBiomass_mg+1) ~ 
+                     Urban_1000 +
+                     Agriculture_50 + 
+                     Open.uncultivated.land_1000+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_500 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects) # data=subset(allInsects, c(Open.uncultivated.land_1000 < 20, Wetland_50 < 40))
+
+summary(full_model)
+AICc(full_model)
+#check variance inflation factor
+vif(full_model)
+
+tab_model(full_model, collapse.ci = F, show.intercept = F, pred.labels = c("Urban (1000 m)", "Farmland (50 m)","Grassland (1000 m)", "Wetland (50 m)", "Forest (500 m)", "Time band: evening vs midday", "Year", "Potential stops", "Day of year", "Time within midday", "Time within evening"), digits = 2, file = "plots/full_model_biomass.html")
+
+# a quick plot
+sjPlot::plot_model(full_model)
+
 # "Biomass (mg)", "mean DNA conc. (ng/ul)",
 
 ### predominant land cover: mean estimated richness ###
@@ -269,9 +461,23 @@ allInsects_totsample %>%
   dplyr::summarise(mean = mean(richness_est)) # 106.989
 
 ##### Table: multcomp landcovers - simple model ##########################
+
+###### richness ####
+
+full_model <- lmer(richness_est ~ 
+                     Urban_1000 +
+                     Agriculture_1000 + 
+                     Open.uncultivated.land_500+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_1000 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects) # data=subset(allInsects, c(Open.uncultivated.land_1000 < 20, Wetland_50 < 40))
+
 # pairwise comparison to urban
 pair.ht <- glht(full_model, linfct = c("Urban_1000 - Agriculture_1000 = 0", "Urban_1000 - Forest_1000 = 0", "Urban_1000 - Wetland_50 = 0", "Urban_1000 - Open.uncultivated.land_500 = 0"))
-summary(pair.ht) # all semi-natural areas have significantly more biomass than urban (and farmland as well, see above)
+summary(pair.ht) 
 confint(pair.ht)
 
 # pairwise comparison to farmland
@@ -289,9 +495,7 @@ pair.ht <- glht(full_model, linfct = c("Wetland_50 - Forest_1000 = 0"))
 summary(pair.ht) 
 confint(pair.ht)
 
-# do not need to compare to forest
-
-##### Plot: coefficient plot ######################################################
+###### Plot: coefficient plot ######################################################
 #point estimate
 myConfint <- confint(full_model)
 
@@ -325,7 +529,7 @@ coefPlot <-
                         legend.title = element_blank(),
                         legend.key = element_rect(size = 0.1),
                         legend.key.size = unit(1, 'cm')
-                      ) + labs(x = "", y = "Effect on estimated flying insect\n richness & 95% CIs") + scale_x_discrete(
+                      ) + labs(x = "", y = "Effect on estimated flying arthropod\n richness & 95% CIs") + scale_x_discrete(
                         labels = c(
                           "Urban_1000" = "Urban",
                           "Agriculture_1000" = "Farmland",
@@ -333,12 +537,92 @@ coefPlot <-
                           "Wetland_50" = "Wetland",
                           "Forest_1000" = "Forest"
                         )
-                      ) + scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) + theme(axis.text.x = element_text(size = 10, angle = 90, vjust=0.3,hjust=1), legend.position = "none", axis.title.y = element_text(size = 10)) + scale_colour_manual(values = landuseCols) + coord_fixed(50)
+                      ) + scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) + theme(axis.text.x = element_text(size = 10, angle = 90, vjust=0.3,hjust=1), legend.position = "none", axis.title.y = element_text(size = 10)) + scale_colour_manual(values = landuseCols) + coord_fixed(0.03)
 
-cowplot::save_plot("plots/DK_coefficient_plot.png", coefPlot, base_width = 4, base_height = 5, dpi = 300)
+cowplot::save_plot("plots/DK_coefficient_richness_plot.png", coefPlot, base_width = 10, base_height = 5, dpi = 300)
+
+###### biomass ####
+
+full_model <- lmer(log(totalBiomass_mg+1) ~ 
+                     Urban_1000 +
+                     Agriculture_50 + 
+                     Open.uncultivated.land_1000+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_500 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects) # data=subset(allInsects, c(Open.uncultivated.land_1000 < 20, Wetland_50 < 40))
+
+# pairwise comparison to urban
+pair.ht <- glht(full_model, linfct = c("Urban_1000 - Agriculture_50 = 0", "Urban_1000 - Forest_500 = 0", "Urban_1000 - Wetland_50 = 0", "Urban_1000 - Open.uncultivated.land_1000 = 0"))
+summary(pair.ht) 
+confint(pair.ht)
+
+# pairwise comparison to farmland
+pair.ht <- glht(full_model, linfct = c("Agriculture_50 - Forest_500 = 0", "Agriculture_50 - Wetland_50  = 0", "Agriculture_50 - Open.uncultivated.land_1000 = 0"))
+summary(pair.ht) # semi-natural covers have higher biomass than farmland, but it is only significant for grassland, urban has significantly lower biomass
+confint(pair.ht)
+
+# pairwise comparison to grassland
+pair.ht <- glht(full_model, linfct = c("Open.uncultivated.land_1000 - Wetland_50 = 0", "Open.uncultivated.land_1000 - Forest_500 = 0"))
+summary(pair.ht) 
+confint(pair.ht)
+
+# pairwise comparison to wetland
+pair.ht <- glht(full_model, linfct = c("Wetland_50 - Forest_500 = 0"))
+summary(pair.ht) 
+confint(pair.ht)
+
+##### # Plot: coefficient plot ######################################################
+#point estimate
+myConfint <- confint(full_model)
+
+coefDF <- data.frame(Landcover = names(fixef(full_model)),
+                     estimate = as.numeric(fixef(full_model)),
+                     lowerCI = as.numeric(myConfint[-c(1:3),1]),
+                     upperCI = as.numeric(myConfint[-c(1:3),2]))
+
+#subset to land covers
+coefDF <- subset(coefDF, Landcover %in% c("Agriculture_50","Urban_1000","Open.uncultivated.land_1000","Wetland_50","Forest_500"))
+
+p <-
+  coefDF %>% mutate(
+    Landcover = fct_relevel(
+      Landcover,
+      "Urban_1000",
+      "Agriculture_50",
+      "Open.uncultivated.land_1000",
+      "Wetland_50",
+      "Forest_500"
+    )) %>% ggplot(aes(Landcover, estimate))
+
+c<-p+scale_size_area(max_size = 1.5)
+
+#this puts in a dotted line at the point of group difference
+d<-c+geom_hline(yintercept = 0, lty=2,size=1)
+
+coefPlot <-
+  d + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI, colour = Landcover),
+                      size = 1.5) + theme_minimal_grid() + theme(
+                        legend.title = element_blank(),
+                        legend.key = element_rect(size = 0.1),
+                        legend.key.size = unit(1, 'cm')
+                      ) + labs(x = "", y = "Effect on estimated flying arthropod\n biomass (log+1) & 95% CIs") + scale_x_discrete(
+                        labels = c(
+                          "Urban_1000" = "Urban",
+                          "Agriculture_50" = "Farmland",
+                          "Open.uncultivated.land_1000" = "Grassland",
+                          "Wetland_50" = "Wetland",
+                          "Forest_500" = "Forest"
+                        )
+                      ) + scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) + theme(axis.text.x = element_text(size = 10, angle = 90, vjust=0.3,hjust=1), legend.position = "none", axis.title.y = element_text(size = 10)) + scale_colour_manual(values = landuseCols) + coord_fixed(1)
+
+cowplot::save_plot("plots/DK_coefficient_biomass_plot.png", coefPlot, base_width = 10, base_height = 5, dpi = 300)
 
 ##### Table: exclude urban (more than 5% urban) ########################################
 
+###### richness ####
 summary(allInsects$Urban_1000) # NB! transformed land covers
 
 #include only sites with less than 5% urban
@@ -364,7 +648,7 @@ lme1000 <- lmer(richness_est ~
 summary(lme1000)
 car::vif(lme1000)
 
-tab_model(lme1000, digits = 2, collapse.ci = F, show.intercept = F, pred.labels = c("Farmland", "Grassland", "Wetland", "Forest", "Year", "Evening vs. midday", "Potential stops", "Day of year", "Time during midday", "Time during evening"))
+tab_model(lme1000, digits = 2, collapse.ci = F, show.intercept = F, pred.labels = c("Farmland", "Grassland", "Wetland", "Forest", "Year", "Evening vs. midday", "Potential stops", "Day of year", "Time during midday", "Time during evening"), title = "Urban cover > 5% excluded")
 
 # pairwise comparison to farmland
 pair.ht <- glht(lme1000, linfct = c("Agriculture_1000 - Forest_250 = 0", "Agriculture_1000 - Wetland_50 = 0", "Agriculture_1000 - Open.uncultivated.land_1000 = 0"))
@@ -386,158 +670,58 @@ pair.ht <- glht(lme1000, linfct = c(
 summary(pair.ht) 
 confint(pair.ht)
 
-##### sqrt land covers #############################################
-#full and final model
-sqrt_model <- lmer(log(Biomass+1) ~ 
-                     sqrt(Urban_1000) +
-                     sqrt(Agriculture_1000) + 
-                     sqrt(Open.uncultivated.land_1000) + 
-                     sqrt(Wetland_50) +
-                     sqrt(Forest_250) +
-                     Time_band + 
-                     Time_band:cnumberTime + cStops + cyDay + 
-                     (1|RouteID_JB) + (1|PilotID), data=subset(allInsects_trans_landcovers, Open.uncultivated.land_1000 < 20))
-# data=subset(allInsects, Open.uncultivated.land_1000 < 0.2)
-summary(sqrt_model)
-car::vif(sqrt_model)
+###### biomass ####
 
-### ilr trans #############################################
-#Approach 1 using the complmrob package
-library(complmrob)
-
-#The variables on the right-hand-side of the formula are transformed with the isometric log-ratio transformation (isomLR) and a robust linear regression model is fit to those transformed variables.
-
-#The log-ratio methodology studies this relative relations using the quotient between parts, to be more precise, using the logarithm between ratios of parts
-
-#need to add small values to zeros in the covariate data to get the function to work
-myvars <-
-  allInsects_trans_landcovers[, c(
-    "Agriculture_1000",
-    "Urban_1000",
-    "Open.uncultivated.land_1000",
-    "Wetland_50",
-    "Forest_250"
-  )]
-
-myvars <- data.frame(apply(myvars, c(1, 2),
-                           function(x)
-                             ifelse(x == 0, 0.001, x)))
-names(myvars) <-
-  c(
-    "cAgriculture_1000",
-    "cUrban_1000",
-    "cOpen.uncultivated.land_1000",
-    "cWetland_50",
-    "cForest_250"
-  )
-
-allInsects_trans_landcovers <-
-  cbind(allInsects_trans_landcovers, myvars)
-
-#original function from complmrob package (no random effects)
-complm1 <-
-  complmrob(
-    log10(Biomass + 1) ~ cUrban_1000 + cAgriculture_1000 + cOpen.uncultivated.land_1000 + cWetland_50 + cForest_250,
-    data = subset(allInsects_trans_landcovers, Open.uncultivated.land_1000 < 20)
-  )
-
-summary(complm1)
-
-tab_model(
-  complm1,
-  show.intercept = F,
-  collapse.ci = F,
-  pred.labels = c("Urban", "Farmland", "Grassland", "Wetland", "Forest")
-)
-
-#fit model as random effects model - setting urban as first composition - other land uses relative to this
-landUses <-
-  c(
-    "cUrban_1000",
-    "cAgriculture_1000",
-    "cOpen.uncultivated.land_1000",
-    "cWetland_50",
-    "cForest_250"
-  )
-
-tmpPred <-
-  data.frame(isomLR(as.matrix(allInsects_trans_landcovers[, landUses]), 1))
-
-tmpNames <- paste(names(tmpPred), collapse = "+")
-
-tmpCovariates <-
-  allInsects[, c("Time_band",
-                 "cnumberTime",
-                 "cStops",
-                 "cyDay",
-                 "RouteID_JB",
-                 "PilotID")]
-
-tmp <- cbind(tmpPred, tmpCovariates)
-str(tmp)
-
-lme1000 <-
-  lmer(
-    as.formula(
-      paste(
-        "log(Biomass+1) ~ Time_band + Time_band:cnumberTime + cStops + cyDay + (1|RouteID_JB) + (1|PilotID) +",
-        tmpNames
-      )
-    ),
-    data = subset(allInsects_trans_landcovers, Open.uncultivated.land_1000 < 20)
-  )
+lme1000 <- lmer(log(totalBiomass_mg+1) ~ 
+                  Agriculture_1000 + 
+                  Open.uncultivated.land_500+
+                  Wetland_50 +
+                  Forest_1000 +
+                  Year +
+                  Time_band + 
+                  Time_band:cnumberTime + 
+                  cTL + 
+                  cyDay + 
+                  (1|RouteID_JB) + (1|PID), data=allInsects_lowUrban)
 
 summary(lme1000)
 car::vif(lme1000)
 
-tab_model(lme1000, show.intercept = F, collapse.ci = F, pred.labels = c("Evening vs midday", "Potential stops", "Day of year", "Urban", "Farmland", "Grassland", "Wetland", "Time during midday", "Time during evening"))
+tab_model(lme1000, digits = 2, collapse.ci = F, show.intercept = F, pred.labels = c("Farmland", "Grassland", "Wetland", "Forest", "Year", "Evening vs. midday", "Potential stops", "Day of year", "Time during midday", "Time during evening"), title = "Urban cover > 5% excluded")
 
-#write function to do the same for all land uses
-landUses <-
-  c(
-    "cAgriculture_1000",
-    "cUrban_1000",
-    "cOpen.uncultivated_1000",
-    "cWetland_50",
-    "cForest_250"
-  )
+# pairwise comparison to farmland
+pair.ht <- glht(lme1000, linfct = c("Agriculture_1000 - Forest_250 = 0", "Agriculture_1000 - Wetland_50 = 0", "Agriculture_1000 - Open.uncultivated.land_1000 = 0"))
+summary(pair.ht) 
+confint(pair.ht)
 
-fitISOLRmodel <- function(component=1){
-  #get isoLR for specified component
-  tmpPred <- data.frame(isomLR(as.matrix(allInsects_trans_landcovers[,landUses]),
-                               component))
-  #paste into a model formula
-  tmpNames <- paste(names(tmpPred),collapse="+")
-  #get other variables that we will need
-  tmpCovariates <- allInsects_trans_landcovers[,c("Time_band","cnumberTime","cStops",
-                                                  "cyDay","RouteID","PilotID")]
-  tmp <- cbind(tmpPred,tmpCovariates)
-  #fit model
-  require(lme4)
-  require(lmerTest)
-  lme1000 <- lmer(as.formula(paste("log(Biomass+1) ~ Time_band + 
-                                   Time_band:cnumberTime + cStops + cyDay +
-                                   (1|RouteID) + (1|PilotID) +",
-                                   tmpNames)), data=allInsects_trans_landcovers)
-  #extract data for land use variable that we are interesed in
-  temp <- data.frame(summary(lme1000)$coefficients)
-  temp <- temp[row.names(temp)==landUses[component],]
-  return(temp)
-  
-}
+# pairwise comparison to grassland
+pair.ht <- glht(lme1000, linfct = c(
+  "Open.uncultivated.land_1000 - Wetland_50 = 0",
+  "Open.uncultivated.land_1000 - Forest_250  = 0"))
 
-#fit function to each land use
-1:5 %>% purrr::map_df(~fitISOLRmodel(.))
-#Estimate  Std..Error       df    t.value     Pr...t..
-#1  0.002236360 0.003391190 175.7068  0.6594617 0.5104627098
-#2 -0.024724382 0.006943607 205.1899 -3.5607406 0.0004596117
-#3  0.014641398 0.014121324 213.0707  1.0368290 0.3009908109
-#4  0.036502476 0.027870023 157.3093  1.3097397 0.1921934363
-#5  0.009113615 0.005403362 155.3046  1.6866563 0.0936771550
+summary(pair.ht) 
+confint(pair.ht)
 
-# follows the same order as landUses <- c("cAgriculture_1000","cUrban_1000", "cOpen.uncultivated_1000","cWetland_50","cForest_250")
+# pairwise comparison to wetland
+pair.ht <- glht(lme1000, linfct = c(
+  "Wetland_50 - Forest_250  = 0"))
 
-### AIC check ##############################################
+summary(pair.ht) 
+confint(pair.ht)
+
+### richness AIC check ##############################################
+#full and final model - the effect of each land cover on estimated flying insect richnes
+full_model <- lmer(richness_est ~ 
+                     Urban_1000 +
+                     Agriculture_1000 + 
+                     Open.uncultivated.land_500+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_1000 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects)
+
 options(na.action = "na.fail")
 dd <- MuMIn::dredge(full_model)
 subset(dd, delta < 2)
@@ -550,24 +734,82 @@ plot(dd, labAsExpr = TRUE)
 #model.avg(dd, subset = delta < 2)
 
 # best model with lowest AIC 
-best_model <- lmer(log(Biomass+1) ~ 
+best_model <- lmer(richness_est ~ 
                      Agriculture_1000 + 
-                     Urban_1000 +
-                     Open.uncultivated.land_1000 + # test if grassland outlier modifies results
+                     #Urban_1000 +
+                     Open.uncultivated.land_500 + # test if grassland outlier modifies results
                      Wetland_50 +
-                     Forest_250 +
-                     Time_band + cyDay + 
-                     (1|RouteID_JB) + (1|PilotID), data=subset(allInsects_trans_landcovers, Open.uncultivated.land_1000 < 20))
+                     Forest_1000 +
+                     Time_band + cTL + Year + cnumberTime +
+                     (1|RouteID_JB) + (1|PID), data= allInsects)
 # data=subset(allInsects, Open.uncultivated.land_1000 < 0.2)
 summary(best_model)
 AICc(best_model)
-tab_model(best_model, pred.labels = c("Intercept", "Farmland (1000 m)", "Urban (1000 m)", "Grassland (1000 m)", "Wetland (50 m)", "Forest (250 m)", "Time band: midday vs evening", "Day of year"))
+tab_model(best_model, show.intercept = F, pred.labels = c("Farmland (1000 m)", "Grassland (500 m)", "Wetland (50 m)", "Forest (1000 m)", "Time band: midday vs evening", "Potential stops", "Year", "Time within a day"))
 r.squaredGLMM(best_model)
 
 # summary for both the full and the best fit model
-tab_model(full_model, best_model, digits = 3, dv.labels = c("Full model", "Best fit model"))
+tab_model(full_model, best_model, title = "Estimated richness", show.intercept = F, digits = 2, dv.labels = c("Full model", "Best fit model"), pred.labels = c("Urban (1000 m)", "Farmland (1000 m)", "Grassland (500 m)", "Wetland (50 m)", "Forest (1000 m)", "Time band: midday vs. evening", "Year: 2019 vs. 2018", "Potential stops", "Day of the year", "Time during evening", "Time during midday", "Time during the day"))
+
+### biomass AIC check ##############################################
+
+#full and final model - the effect of each land cover on estimated flying insect richness
+full_model <- lmer(log(totalBiomass_mg+1) ~ 
+                     Urban_1000 +
+                     Agriculture_50 + 
+                     Open.uncultivated.land_1000+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_500 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects)
+
+options(na.action = "na.fail")
+dd <- MuMIn::dredge(full_model)
+subset(dd, delta < 2)
+
+# Visualize the model selection table:
+par(mar = c(3,5,6,4))
+plot(dd, labAsExpr = TRUE)
+
+# Model average models with delta AICc < 4
+#model.avg(dd, subset = delta < 2)
+
+# best model with lowest AIC 
+best_model <- lmer(log(totalBiomass_mg+1) ~ 
+                     #Agriculture_1000 + 
+                     Urban_1000 +
+                     #Open.uncultivated.land_500 + # test if grassland outlier modifies results
+                     #Wetland_50 +
+                     #Forest_1000 +
+                     Time_band + 
+                     #cTL + 
+                     Year + cnumberTime +
+                     (1|RouteID_JB) + (1|PID), data= allInsects)
+# data=subset(allInsects, Open.uncultivated.land_1000 < 0.2)
+summary(best_model)
+AICc(best_model)
+tab_model(best_model, show.intercept = F, pred.labels = c("Urban (1000 m)", "Time band: midday vs evening", "Year", "Time within a day"))
+ nr.squaredGLMM(best_model)
+
+# summary for both the full and the best fit model
+tab_model(full_model, best_model, title = "Estimated biomass (log +1)", show.intercept = F, digits = 2, dv.labels = c("Full model", "Best fit model"), pred.labels = c("Urban (1000 m)", "Farmland (50 m)", "Grassland (1000 m)", "Wetland (50 m)", "Forest (500 m)", "Time band: midday vs. evening", "Year: 2019 vs. 2018", "Potential stops", "Day of the year", "Time during evening", "Time during midday", "Time during the day"))
 
 ##### Figure 4: effect plot ##########################
+
+###### richness ##########
+full_model <- lmer(richness_est ~ 
+                     Urban_1000 +
+                     Agriculture_1000 + 
+                     Open.uncultivated.land_500+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_1000 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects)
+
 # extract effects
 gls1.alleffects <- allEffects(full_model)
 plot(gls1.alleffects, 'Year', ylab="richness_est")
@@ -575,7 +817,7 @@ effectdata <- as.data.frame(gls1.alleffects, row.names=NULL, optional=TRUE)
 
 eall.lm1 <- predictorEffects(full_model)
 plot(eall.lm1, lines=list(multiline=TRUE))
-plot(predictorEffects(full_model, ~ Agriculture_1000 + Urban_1000 + Open.uncultivated.land_1000 + Forest_250 + Wetland_50 + cnumberTime, residuals = T), partial.residuals=list(smooth=TRUE, span=0.50, lty = "dashed"))
+plot(predictorEffects(full_model, ~ Agriculture_1000 + Urban_1000 + Open.uncultivated.land_500 + Forest_1000 + Wetland_50 + cnumberTime, residuals = T), partial.residuals=list(smooth=TRUE, span=0.50, lty = "dashed"))
 
 # make data frames for each land cover
 temp <- effectdata$Agriculture_1000
@@ -583,6 +825,126 @@ temp$landcover <- "Agriculture_1000"
 farm <- temp %>% 
   dplyr::rename(
     propcover = Agriculture_1000
+  )%>% dplyr::select(landcover, propcover, fit, se, lower, upper)
+
+# urban
+temp <- effectdata$Urban_1000
+temp$landcover <- "Urban_1000"
+urb <- temp %>% 
+  dplyr::rename(
+    propcover = Urban_1000
+  )%>% dplyr::select(landcover, propcover, fit, se, lower, upper)
+
+# Open.uncultivated.land
+temp <- effectdata$Open.uncultivated.land_500
+temp$landcover <- "Grassland_500"
+grass <- temp %>% 
+  dplyr::rename(
+    propcover = Open.uncultivated.land_500
+  ) %>% dplyr::select(landcover, propcover, fit, se, lower, upper)
+
+# Wetland
+temp <- effectdata$Wetland_50
+temp$landcover <- "Wetland_50"
+wet <- temp %>% 
+  dplyr::rename(
+    propcover = Wetland_50
+  )%>% dplyr::select(landcover, propcover, fit, se, lower, upper)
+
+# Forest
+temp <- effectdata$Forest_1000
+temp$landcover <- "Forest_1000"
+forest <- temp %>% 
+  dplyr::rename(
+    propcover = Forest_1000
+  ) %>% dplyr::select(landcover, propcover, fit, se, lower, upper)
+
+# Timeband
+temp <- effectdata$`Time_band:cnumberTime`
+#temp$landcover <- "Time_band:cnumberTime"
+time <- temp
+
+# combine the data frames
+test <- rbind(urb, farm, grass, wet, forest)
+
+# Visualization
+effectplot <- test %>% mutate(
+  landcover = fct_relevel(
+    landcover,
+    "Urban_1000",
+    "Agriculture_1000",
+    "Grassland_500",
+    "Wetland_50",
+    "Forest_1000"
+  )
+) %>% ggplot(aes(x = propcover, y = fit, fill = landcover)) +
+  geom_line(aes(color = landcover), size = 2) +
+  scale_color_manual(
+    values = landuseCols,
+    labels = c(
+      "Urban cover",
+      "Farmland cover",
+      "Grassland cover",
+      "Wetland cover",
+      "Forest cover"
+    )
+  ) +guides(colour=guide_legend(ncol=1, byrow = T)) + theme_minimal_grid() + theme(
+    plot.subtitle = element_text(size = 20, face = "bold"),
+    legend.title = element_blank(),
+    legend.text = element_text(size =14),
+    legend.position = "",
+    legend.spacing.x = unit(1.0, 'cm'),
+    legend.key.height = unit(1, 'cm')
+  ) + scale_x_continuous(
+    limits = c(0, 100),
+    labels = function(x)
+      paste0(x, "%")) + geom_ribbon(
+        aes(
+          ymin = fit-se,
+          ymax = fit+se,
+          group = landcover
+        ),
+        linetype = 2,
+        alpha = 0.2,
+        show.legend = F
+      ) + labs(
+        x = "Land cover extent",
+        y = "Estimated richness",
+        subtitle = "A",
+        colour = "Land cover type"
+      ) + scale_fill_manual(values = landuseCols)
+
+cowplot::save_plot("plots/Fig_DK_effect_richness_landcover.tiff", effectplot, base_width = 8, base_height = 5, dpi = 800)
+
+cowplot::save_plot("plots/Fig_DK_effect_richness_landcover.png", effectplot, base_width = 8, base_height = 5, dpi = 800)
+
+###### biomass ##########
+full_model <- lmer(log(totalBiomass_mg+1) ~ 
+                     Urban_1000 +
+                     Agriculture_50 + 
+                     Open.uncultivated.land_1000+ # test if outlier drives the pattern
+                     Wetland_50 +
+                     Forest_500 +
+                     Time_band + 
+                     Year +
+                     Time_band:cnumberTime + cTL + cyDay + 
+                     (1|RouteID_JB) + (1|PID), data=allInsects)
+
+# extract effects
+gls1.alleffects <- allEffects(full_model)
+plot(gls1.alleffects, 'Year', ylab="totalBiomass_mg (log+1)")
+effectdata <- as.data.frame(gls1.alleffects, row.names=NULL, optional=TRUE)
+
+eall.lm1 <- predictorEffects(full_model)
+plot(eall.lm1, lines=list(multiline=TRUE))
+plot(predictorEffects(full_model, ~ Agriculture_50 + Urban_1000 + Open.uncultivated.land_1000 + Forest_500 + Wetland_50 + cnumberTime, residuals = T), partial.residuals=list(smooth=TRUE, span=0.50, lty = "dashed"))
+
+# make data frames for each land cover
+temp <- effectdata$Agriculture_50
+temp$landcover <- "Agriculture_50"
+farm <- temp %>% 
+  dplyr::rename(
+    propcover = Agriculture_50
   )%>% dplyr::select(landcover, propcover, fit, se, lower, upper)
 
 # urban
@@ -610,11 +972,11 @@ wet <- temp %>%
   )%>% dplyr::select(landcover, propcover, fit, se, lower, upper)
 
 # Forest
-temp <- effectdata$Forest_250
-temp$landcover <- "Forest_250"
+temp <- effectdata$Forest_500
+temp$landcover <- "Forest_500"
 forest <- temp %>% 
   dplyr::rename(
-    propcover = Forest_250
+    propcover = Forest_500
   ) %>% dplyr::select(landcover, propcover, fit, se, lower, upper)
 
 # Timeband
@@ -630,10 +992,10 @@ effectplot <- test %>% mutate(
   landcover = fct_relevel(
     landcover,
     "Urban_1000",
-    "Agriculture_1000",
+    "Agriculture_50",
     "Grassland_1000",
     "Wetland_50",
-    "Forest_250"
+    "Forest_500"
   )
 ) %>% ggplot(aes(x = propcover, y = fit, fill = landcover)) +
   geom_line(aes(color = landcover), size = 2) +
@@ -646,17 +1008,17 @@ effectplot <- test %>% mutate(
       "Wetland cover",
       "Forest cover"
     )
-  ) +guides(colour=guide_legend(ncol=1, byrow = T)) + theme_minimal_grid() + theme(
+  ) +guides(colour=guide_legend(nrow=1, byrow = T)) + theme_minimal_grid() + theme(
     plot.subtitle = element_text(size = 20, face = "bold"),
     legend.title = element_blank(),
-    legend.text = element_text(size =14),
-    legend.position = "right",
-    legend.spacing.x = unit(1.0, 'cm'),
-    legend.key.height = unit(1, 'cm')
+    legend.text = element_text(size =10),
+    legend.position = "bottom",
+    legend.spacing.x = unit(0.5, 'cm'),
+    legend.key.height = unit(0.5, 'cm')
   ) + scale_x_continuous(
     limits = c(0, 100),
     labels = function(x)
-      paste0(x, "%")) + scale_y_continuous(limits = c(1.5, 7)) + geom_ribbon(
+      paste0(x, "%")) + geom_ribbon(
         aes(
           ymin = fit-se,
           ymax = fit+se,
@@ -667,14 +1029,14 @@ effectplot <- test %>% mutate(
         show.legend = F
       ) + labs(
         x = "Land cover extent",
-        y = "log Predicted biomass (mg)",
-        subtitle = "A: Denmark",
+        y = "Estimated biomass (log+1)",
+        subtitle = "B",
         colour = "Land cover type"
       ) + scale_fill_manual(values = landuseCols)
 
-cowplot::save_plot("plots/Fig4_DK_effect_landcover.tiff", effectplot, base_width = 8, base_height = 5, dpi = 800)
+cowplot::save_plot("plots/Fig_DK_effect_biomass_landcover.tiff", effectplot, base_width = 8, base_height = 5, dpi = 800)
 
-cowplot::save_plot("plots/Fig4_DK_effect_landcover.png", effectplot, base_width = 8, base_height = 5, dpi = 800)
+cowplot::save_plot("plots/Fig_DK_effect_biomass_landcover.png", effectplot, base_width = 8, base_height = 5, dpi = 800)
 
 ##### Figure 5: time band ###############################
 maxs <- c("Urban_1000", "Agriculture_1000", "Forest_1000")
